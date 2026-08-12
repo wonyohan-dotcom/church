@@ -140,6 +140,21 @@ npm run db:seed
 
 ## 서버에 올려서 여러 사람이 쓰기
 
+> **핸드폰에서 앱처럼 쓰고 싶다면** → [docs/핸드폰에서-사용하기.md](docs/핸드폰에서-사용하기.md)
+> 서버 올리는 방법부터 홈 화면에 추가하는 법, 성도님께 보낼 안내문까지 정리되어 있습니다.
+
+### Docker (권장)
+
+```bash
+openssl rand -hex 32          # APP_SECRET 만들어 docker-compose.yml 에 채우기
+docker compose up -d
+```
+
+데이터베이스와 사진이 모두 `/data` 볼륨 한 곳에 모이므로, 백업은 이 볼륨만 복사하면 됩니다.
+컨테이너가 뜰 때 데이터베이스 마이그레이션이 자동으로 적용됩니다.
+
+### 직접 실행
+
 ```bash
 npm run build
 npm start

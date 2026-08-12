@@ -8,6 +8,10 @@ import { SubmitButton } from "@/components/form";
 
 export const metadata = { title: "최초 설정" };
 
+// 이 화면은 '계정이 하나도 없는가'를 매번 확인해야 한다.
+// 빌드 시점에 미리 만들어 두면, 새로 설치한 교회에서 관리자 계정을 만들 수 없다.
+export const dynamic = "force-dynamic";
+
 async function setup(formData: FormData) {
   "use server";
 
