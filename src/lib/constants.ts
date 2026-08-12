@@ -13,6 +13,23 @@ export const STAFF_ROLES: Role[] = ["ADMIN", "FINANCE", "PASTOR"];
 /** 회계 데이터를 수정할 수 있는 역할 */
 export const FINANCE_ROLES: Role[] = ["ADMIN", "FINANCE"];
 
+/** 로그인 계정의 상태 — 가입 신청 후 관리자가 승인해야 사용할 수 있다. */
+export const USER_STATUS = {
+  PENDING: "승인 대기",
+  ACTIVE: "사용 중",
+  REJECTED: "거절됨",
+  SUSPENDED: "정지됨",
+} as const;
+export type UserStatus = keyof typeof USER_STATUS;
+
+/** 관리자가 가입 신청을 승인하면서 고를 수 있는 권한과 설명 */
+export const ROLE_DESCRIPTIONS: Record<Role, string> = {
+  ADMIN: "모든 기능 + 교회 설정과 계정 관리",
+  FINANCE: "교적 조회 + 헌금·지출 입력, 영수증 발급",
+  PASTOR: "교적과 교회 역사 관리 (헌금 내역은 볼 수 없음)",
+  MEMBER: "본인 헌금 내역과 기부금영수증만",
+};
+
 export const MEMBER_STATUS = {
   ACTIVE: "재적",
   INACTIVE: "장기결석",

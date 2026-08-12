@@ -45,10 +45,14 @@ export async function getSession(): Promise<SessionUser | null> {
   return verifySessionToken(token);
 }
 
-/** 로그인 필수. 미로그인 시 로그인 화면으로 보낸다. */
+/**
+ * 로그인 필수. 승인이 나지 않은 계정은 대기 화면으로 보낸다.
+ * 반환값의 churchId 는 이후 모든 조회의 범위가 된다.
+ */
 export async function requireUser(): Promise<SessionUser> {
   const user = await getSession();
   if (!user) redirect("/login");
+  if (user.status !== "ACTIVE") redirect("/pending");
   return user;
 }
 

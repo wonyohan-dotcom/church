@@ -23,6 +23,7 @@ export async function createOffering(formData: FormData) {
 
   const offering = await prisma.offering.create({
     data: {
+      churchId: user.churchId,
       date,
       amount,
       accountId,
@@ -36,6 +37,7 @@ export async function createOffering(formData: FormData) {
   });
 
   await logAudit({
+    churchId: user.churchId,
     action: "CREATE",
     entity: "Offering",
     entityId: offering.id,
@@ -57,6 +59,9 @@ export async function createOffering(formData: FormData) {
 
 export async function updateOffering(id: string, formData: FormData) {
   const user = await requireFinance();
+
+  const existing = await prisma.offering.findUnique({ where: { id } });
+  if (!existing || existing.churchId !== user.churchId) redirect("/finance/offerings");
 
   const date = parseDate(formData.get("date"));
   const amount = parseIntOr(formData.get("amount"));
@@ -80,6 +85,7 @@ export async function updateOffering(id: string, formData: FormData) {
   });
 
   await logAudit({
+    churchId: user.churchId,
     action: "UPDATE",
     entity: "Offering",
     entityId: id,
@@ -99,11 +105,12 @@ export async function deleteOffering(id: string) {
     where: { id },
     include: { account: true },
   });
-  if (!offering) redirect("/finance/offerings");
+  if (!offering || offering.churchId !== user.churchId) redirect("/finance/offerings");
 
   await prisma.offering.delete({ where: { id } });
 
   await logAudit({
+    churchId: user.churchId,
     action: "DELETE",
     entity: "Offering",
     entityId: id,
@@ -138,6 +145,7 @@ export async function createExpense(formData: FormData) {
 
   const expense = await prisma.expense.create({
     data: {
+      churchId: user.churchId,
       date,
       amount,
       accountId,
@@ -152,6 +160,7 @@ export async function createExpense(formData: FormData) {
   });
 
   await logAudit({
+    churchId: user.churchId,
     action: "CREATE",
     entity: "Expense",
     entityId: expense.id,
@@ -166,6 +175,9 @@ export async function createExpense(formData: FormData) {
 
 export async function updateExpense(id: string, formData: FormData) {
   const user = await requireFinance();
+
+  const existing = await prisma.expense.findUnique({ where: { id } });
+  if (!existing || existing.churchId !== user.churchId) redirect("/finance/expenses");
 
   const date = parseDate(formData.get("date"));
   const amount = parseIntOr(formData.get("amount"));
@@ -207,6 +219,7 @@ export async function updateExpense(id: string, formData: FormData) {
   });
 
   await logAudit({
+    churchId: user.churchId,
     action: "UPDATE",
     entity: "Expense",
     entityId: id,
@@ -226,12 +239,13 @@ export async function deleteExpense(id: string) {
     where: { id },
     include: { account: true },
   });
-  if (!expense) redirect("/finance/expenses");
+  if (!expense || expense.churchId !== user.churchId) redirect("/finance/expenses");
 
   await prisma.expense.delete({ where: { id } });
   await deleteImage(expense.receiptUrl);
 
   await logAudit({
+    churchId: user.churchId,
     action: "DELETE",
     entity: "Expense",
     entityId: id,
@@ -255,12 +269,14 @@ export async function createAccount(formData: FormData) {
 
   if (!code || !name) redirect("/finance/accounts?error=input");
 
-  if (await prisma.account.findUnique({ where: { code } })) {
-    redirect("/finance/accounts?error=duplicate");
-  }
+  const duplicate = await prisma.account.findUnique({
+    where: { churchId_code: { churchId: user.churchId, code } },
+  });
+  if (duplicate) redirect("/finance/accounts?error=duplicate");
 
   await prisma.account.create({
     data: {
+      churchId: user.churchId,
       code,
       name,
       type,
@@ -271,6 +287,7 @@ export async function createAccount(formData: FormData) {
   });
 
   await logAudit({
+    churchId: user.churchId,
     action: "CREATE",
     entity: "Account",
     summary: `계정과목 추가: ${code} ${name}`,
@@ -282,9 +299,9 @@ export async function createAccount(formData: FormData) {
 }
 
 export async function toggleAccountActive(id: string) {
-  await requireFinance();
+  const user = await requireFinance();
   const account = await prisma.account.findUnique({ where: { id } });
-  if (!account) return;
+  if (!account || account.churchId !== user.churchId) return;
 
   await prisma.account.update({
     where: { id },
@@ -302,10 +319,11 @@ export async function deleteAccount(id: string) {
     select: {
       code: true,
       name: true,
+      churchId: true,
       _count: { select: { offerings: true, expenses: true } },
     },
   });
-  if (!account) redirect("/finance/accounts");
+  if (!account || account.churchId !== user.churchId) redirect("/finance/accounts");
 
   // 이미 쓰인 과목을 지우면 과거 장부가 깨진다. 대신 '사용 안 함'으로 돌린다.
   if (account._count.offerings > 0 || account._count.expenses > 0) {
@@ -315,6 +333,7 @@ export async function deleteAccount(id: string) {
   await prisma.account.delete({ where: { id } });
 
   await logAudit({
+    churchId: user.churchId,
     action: "DELETE",
     entity: "Account",
     summary: `계정과목 삭제: ${account.code} ${account.name}`,
@@ -330,7 +349,10 @@ export async function deleteAccount(id: string) {
 export async function saveBudget(year: number, formData: FormData) {
   const user = await requireFinance();
 
-  const accounts = await prisma.account.findMany({ select: { id: true } });
+  const accounts = await prisma.account.findMany({
+    where: { churchId: user.churchId },
+    select: { id: true },
+  });
 
   await prisma.$transaction(
     accounts.map((a) => {
@@ -338,12 +360,13 @@ export async function saveBudget(year: number, formData: FormData) {
       return prisma.budget.upsert({
         where: { year_accountId: { year, accountId: a.id } },
         update: { amount },
-        create: { year, accountId: a.id, amount },
+        create: { churchId: user.churchId, year, accountId: a.id, amount },
       });
     }),
   );
 
   await logAudit({
+    churchId: user.churchId,
     action: "UPDATE",
     entity: "Budget",
     summary: `${year}년 예산 저장`,

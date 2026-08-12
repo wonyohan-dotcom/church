@@ -43,6 +43,7 @@ export default async function ExpensesPage({
       : { gte: new Date(year, 0, 1), lt: new Date(year + 1, 0, 1) };
 
   const where: Prisma.ExpenseWhereInput = {
+    churchId: staff.churchId,
     date: dateFilter,
     ...(accountId ? { accountId } : {}),
   };
@@ -57,7 +58,10 @@ export default async function ExpensesPage({
     }),
     prisma.expense.count({ where }),
     prisma.expense.aggregate({ where, _sum: { amount: true } }),
-    prisma.account.findMany({ where: { type: "EXPENSE" }, orderBy: { sortOrder: "asc" } }),
+    prisma.account.findMany({
+      where: { churchId: staff.churchId, type: "EXPENSE" },
+      orderBy: { sortOrder: "asc" },
+    }),
   ]);
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));

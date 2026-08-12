@@ -8,7 +8,7 @@ import { MyNav } from "./my-nav";
 
 export default async function MyLayout({ children }: { children: React.ReactNode }) {
   const user = await requireUser();
-  const church = await getChurch();
+  const church = await getChurch(user.churchId);
 
   return (
     <div className="min-h-dvh bg-bg">

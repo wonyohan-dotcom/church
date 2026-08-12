@@ -4,6 +4,7 @@ import { requireStaff } from "@/lib/auth";
 import { phone as fmtPhone } from "@/lib/format";
 import { Card, CardTitle, EmptyState, Field, PageHeader } from "@/components/ui";
 import { ConfirmSubmitButton, SubmitButton } from "@/components/form";
+import { AddressFields } from "@/components/address-fields";
 import { IconUsers } from "@/components/icons";
 import {
   createDistrict,
@@ -15,14 +16,16 @@ import {
 export const metadata = { title: "교구·가정 관리" };
 
 export default async function GroupsPage() {
-  await requireStaff();
+  const staff = await requireStaff();
 
   const [districts, households] = await Promise.all([
     prisma.district.findMany({
+      where: { churchId: staff.churchId },
       orderBy: { sortOrder: "asc" },
       include: { _count: { select: { members: true } } },
     }),
     prisma.household.findMany({
+      where: { churchId: staff.churchId },
       orderBy: { name: "asc" },
       include: { district: true, _count: { select: { members: true } } },
     }),
@@ -113,12 +116,7 @@ export default async function GroupsPage() {
                   <input name="phone" type="tel" className="field" placeholder="010-0000-0000" />
                 </Field>
               </div>
-              <Field label="주소">
-                <input name="address" className="field" />
-              </Field>
-              <Field label="상세 주소">
-                <input name="addressDetail" className="field" />
-              </Field>
+              <AddressFields label="가정 주소" />
               <SubmitButton className="btn btn-primary w-full">추가하기</SubmitButton>
             </form>
           </Card>

@@ -22,10 +22,11 @@ export default async function AccountsPage({
 }: {
   searchParams: Promise<{ error?: string; ok?: string }>;
 }) {
-  await requireFinance();
+  const staff = await requireFinance();
   const sp = await searchParams;
 
   const accounts = await prisma.account.findMany({
+    where: { churchId: staff.churchId },
     orderBy: [{ type: "asc" }, { sortOrder: "asc" }, { code: "asc" }],
     include: { _count: { select: { offerings: true, expenses: true } } },
   });

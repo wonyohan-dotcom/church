@@ -1,12 +1,12 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
-import { getChurch } from "@/lib/church";
 import { STAFF_ROLES, type Role } from "@/lib/constants";
-import { prisma } from "@/lib/prisma";
 import { IconCross } from "@/components/icons";
 import { LoginForm } from "./login-form";
 
 export const metadata = { title: "로그인" };
+export const dynamic = "force-dynamic";
 
 export default async function LoginPage({
   searchParams,
@@ -15,14 +15,10 @@ export default async function LoginPage({
 }) {
   const session = await getSession();
   if (session) {
+    if (session.status !== "ACTIVE") redirect("/pending");
     redirect(STAFF_ROLES.includes(session.role as Role) ? "/dashboard" : "/my");
   }
 
-  // 계정이 하나도 없으면 최초 설치 화면으로 안내한다.
-  const userCount = await prisma.user.count();
-  if (userCount === 0) redirect("/setup");
-
-  const church = await getChurch();
   const { next } = await searchParams;
 
   return (
@@ -32,19 +28,33 @@ export default async function LoginPage({
           <span className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary text-primary-ink shadow-[var(--shadow)]">
             <IconCross width={26} height={26} />
           </span>
-          <h1 className="text-xl font-bold tracking-[-0.02em] text-ink">{church.name}</h1>
-          <p className="mt-1 text-sm text-ink-3">통합 관리 시스템</p>
+          <h1 className="text-xl font-bold tracking-[-0.02em] text-ink">
+            교회 통합 관리 시스템
+          </h1>
+          <p className="mt-1 text-sm text-ink-3">교적 · 회계 · 기부금영수증</p>
         </div>
 
         <div className="card p-6">
           <LoginForm next={next ?? ""} />
         </div>
 
-        <p className="mt-6 text-center text-xs leading-relaxed text-ink-3">
-          성도님은 교회에서 발급받은 아이디로 로그인하시면
-          <br />
-          헌금 내역과 기부금영수증을 확인하실 수 있습니다.
-        </p>
+        <div className="mt-5 space-y-2.5 text-center">
+          <p className="text-sm text-ink-2">
+            처음이신가요?{" "}
+            <Link href="/signup" className="font-semibold text-primary hover:underline">
+              성도 가입 신청
+            </Link>
+          </p>
+          <p className="text-sm text-ink-3">
+            교회를 새로 등록하시려면{" "}
+            <Link
+              href="/register-church"
+              className="font-semibold text-primary hover:underline"
+            >
+              교회 등록
+            </Link>
+          </p>
+        </div>
       </div>
     </main>
   );

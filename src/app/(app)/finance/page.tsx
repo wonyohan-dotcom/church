@@ -23,20 +23,32 @@ export default async function FinancePage({
   const isThisYear = year === now.getFullYear();
   const month = now.getMonth() + 1;
 
-  const summary = await getYearSummary(year);
+  const summary = await getYearSummary(staff.churchId, year);
 
   const thisMonth = isThisYear ? monthRange(year, month) : monthRange(year, 12);
   const [monthIncome, monthExpense, recentOfferings, recentExpenses] = await Promise.all([
-    prisma.offering.aggregate({ where: { date: thisMonth }, _sum: { amount: true } }),
-    prisma.expense.aggregate({ where: { date: thisMonth }, _sum: { amount: true } }),
+    prisma.offering.aggregate({
+      where: { churchId: staff.churchId, date: thisMonth },
+      _sum: { amount: true },
+    }),
+    prisma.expense.aggregate({
+      where: { churchId: staff.churchId, date: thisMonth },
+      _sum: { amount: true },
+    }),
     prisma.offering.findMany({
-      where: { date: { gte: new Date(year, 0, 1), lt: new Date(year + 1, 0, 1) } },
+      where: {
+        churchId: staff.churchId,
+        date: { gte: new Date(year, 0, 1), lt: new Date(year + 1, 0, 1) },
+      },
       include: { account: true, member: true },
       orderBy: [{ date: "desc" }, { createdAt: "desc" }],
       take: 6,
     }),
     prisma.expense.findMany({
-      where: { date: { gte: new Date(year, 0, 1), lt: new Date(year + 1, 0, 1) } },
+      where: {
+        churchId: staff.churchId,
+        date: { gte: new Date(year, 0, 1), lt: new Date(year + 1, 0, 1) },
+      },
       include: { account: true },
       orderBy: [{ date: "desc" }, { createdAt: "desc" }],
       take: 6,

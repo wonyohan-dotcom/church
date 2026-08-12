@@ -36,7 +36,7 @@ export default async function MembersPage({
     page?: string;
   }>;
 }) {
-  await requireStaff();
+  const staff = await requireStaff();
   const sp = await searchParams;
 
   const q = sp.q?.trim() ?? "";
@@ -46,6 +46,7 @@ export default async function MembersPage({
   const page = Math.max(1, Number(sp.page ?? 1) || 1);
 
   const where: Prisma.MemberWhereInput = {
+    churchId: staff.churchId,
     ...(status !== "ALL" ? { status } : {}),
     ...(districtId ? { districtId } : {}),
     ...(position ? { position } : {}),
@@ -70,8 +71,15 @@ export default async function MembersPage({
       take: PAGE_SIZE,
     }),
     prisma.member.count({ where }),
-    prisma.district.findMany({ orderBy: { sortOrder: "asc" } }),
-    prisma.member.groupBy({ by: ["status"], _count: true }),
+    prisma.district.findMany({
+      where: { churchId: staff.churchId },
+      orderBy: { sortOrder: "asc" },
+    }),
+    prisma.member.groupBy({
+      by: ["status"],
+      where: { churchId: staff.churchId },
+      _count: true,
+    }),
   ]);
 
   const countOf = (s: string) => counts.find((c) => c.status === s)?._count ?? 0;
@@ -79,8 +87,12 @@ export default async function MembersPage({
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   const [maleCount, femaleCount] = await Promise.all([
-    prisma.member.count({ where: { status: "ACTIVE", gender: "M" } }),
-    prisma.member.count({ where: { status: "ACTIVE", gender: "F" } }),
+    prisma.member.count({
+      where: { churchId: staff.churchId, status: "ACTIVE", gender: "M" },
+    }),
+    prisma.member.count({
+      where: { churchId: staff.churchId, status: "ACTIVE", gender: "F" },
+    }),
   ]);
 
   function pageHref(p: number) {

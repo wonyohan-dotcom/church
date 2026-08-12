@@ -22,12 +22,13 @@ export default async function ReportPage({
   const year = Number(sp.year) || now.getFullYear();
 
   const [summary, church, accounts, budgets] = await Promise.all([
-    getYearSummary(year),
-    getChurch(),
+    getYearSummary(staff.churchId, year),
+    getChurch(staff.churchId),
     prisma.account.findMany({
+      where: { churchId: staff.churchId },
       orderBy: [{ type: "asc" }, { sortOrder: "asc" }],
     }),
-    prisma.budget.findMany({ where: { year } }),
+    prisma.budget.findMany({ where: { churchId: staff.churchId, year } }),
   ]);
 
   const budgetOf = new Map(budgets.map((b) => [b.accountId, b.amount]));

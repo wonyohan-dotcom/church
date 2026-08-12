@@ -28,10 +28,12 @@ export default async function MyReceiptPage({
   if (!receipt) notFound();
 
   // 본인 영수증만 볼 수 있다.
-  if (receipt.memberId !== user.memberId) redirect("/my/receipts");
+  if (receipt.churchId !== user.churchId || receipt.memberId !== user.memberId) {
+    redirect("/my/receipts");
+  }
   if (receipt.status !== "ISSUED") redirect("/my/receipts");
 
-  const church = await getChurch();
+  const church = await getChurch(user.churchId);
 
   return (
     <>

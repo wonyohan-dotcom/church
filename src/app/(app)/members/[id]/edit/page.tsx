@@ -19,17 +19,23 @@ export default async function EditMemberPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ error?: string }>;
 }) {
-  await requireStaff();
+  const staff = await requireStaff();
   const { id } = await params;
   const { error } = await searchParams;
 
   const [member, districts, households] = await Promise.all([
     prisma.member.findUnique({ where: { id } }),
-    prisma.district.findMany({ orderBy: { sortOrder: "asc" } }),
-    prisma.household.findMany({ orderBy: { name: "asc" } }),
+    prisma.district.findMany({
+      where: { churchId: staff.churchId },
+      orderBy: { sortOrder: "asc" },
+    }),
+    prisma.household.findMany({
+      where: { churchId: staff.churchId },
+      orderBy: { name: "asc" },
+    }),
   ]);
 
-  if (!member) notFound();
+  if (!member || member.churchId !== staff.churchId) notFound();
 
   return (
     <>

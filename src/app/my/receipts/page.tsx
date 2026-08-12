@@ -15,6 +15,7 @@ import {
   PageHeader,
 } from "@/components/ui";
 import { ConfirmSubmitButton, SubmitButton } from "@/components/form";
+import { AddressFields } from "@/components/address-fields";
 import { IconChevronRight, IconReceipt } from "@/components/icons";
 import { cancelReceipt, requestReceipt } from "@/actions/receipts";
 
@@ -69,9 +70,9 @@ export default async function MyReceiptsPage({
 
   const [member, church, receipts, yearTotals] = await Promise.all([
     prisma.member.findUnique({ where: { id: memberId } }),
-    getChurch(),
+    getChurch(user.churchId),
     prisma.donationReceipt.findMany({
-      where: { memberId },
+      where: { churchId: user.churchId, memberId },
       orderBy: { year: "desc" },
     }),
     Promise.all(
@@ -135,19 +136,13 @@ export default async function MyReceiptsPage({
               />
             </Field>
 
-            <Field label="주소" required>
-              <input
-                name="address"
-                className="field"
-                required
-                defaultValue={
-                  member?.address
-                    ? `${member.address} ${member.addressDetail ?? ""}`.trim()
-                    : ""
-                }
-                placeholder="주민등록상 주소"
-              />
-            </Field>
+            <AddressFields
+              label="주소"
+              required
+              defaultPostal={member?.postalCode ?? ""}
+              defaultAddress={member?.address ?? ""}
+              defaultDetail={member?.addressDetail ?? ""}
+            />
 
             <Field label="연락처">
               <input

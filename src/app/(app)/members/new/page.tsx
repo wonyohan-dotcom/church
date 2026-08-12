@@ -16,12 +16,18 @@ export default async function NewMemberPage({
 }: {
   searchParams: Promise<{ error?: string }>;
 }) {
-  await requireStaff();
+  const staff = await requireStaff();
   const { error } = await searchParams;
 
   const [districts, households] = await Promise.all([
-    prisma.district.findMany({ orderBy: { sortOrder: "asc" } }),
-    prisma.household.findMany({ orderBy: { name: "asc" } }),
+    prisma.district.findMany({
+      where: { churchId: staff.churchId },
+      orderBy: { sortOrder: "asc" },
+    }),
+    prisma.household.findMany({
+      where: { churchId: staff.churchId },
+      orderBy: { name: "asc" },
+    }),
   ]);
 
   return (

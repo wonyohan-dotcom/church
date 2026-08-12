@@ -63,7 +63,7 @@ export default async function MemberDetailPage({
     where: { id },
     include: { district: true, household: true, user: true },
   });
-  if (!member) notFound();
+  if (!member || member.churchId !== staff.churchId) notFound();
 
   const showFinance = canManageFinance(staff.role);
   const thisYear = new Date().getFullYear();
@@ -71,7 +71,11 @@ export default async function MemberDetailPage({
   // 같은 가정에 속한 다른 교인
   const family = member.householdId
     ? await prisma.member.findMany({
-        where: { householdId: member.householdId, id: { not: member.id } },
+        where: {
+          churchId: staff.churchId,
+          householdId: member.householdId,
+          id: { not: member.id },
+        },
         orderBy: { birthDate: "asc" },
       })
     : [];

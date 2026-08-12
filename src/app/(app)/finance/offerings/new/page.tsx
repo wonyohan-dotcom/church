@@ -11,16 +11,16 @@ export default async function NewOfferingPage({
 }: {
   searchParams: Promise<{ error?: string; ok?: string; date?: string; accountId?: string }>;
 }) {
-  await requireFinance();
+  const staff = await requireFinance();
   const sp = await searchParams;
 
   const [accounts, members] = await Promise.all([
     prisma.account.findMany({
-      where: { type: "INCOME", active: true },
+      where: { churchId: staff.churchId, type: "INCOME", active: true },
       orderBy: { sortOrder: "asc" },
     }),
     prisma.member.findMany({
-      where: { status: "ACTIVE" },
+      where: { churchId: staff.churchId, status: "ACTIVE" },
       select: { id: true, name: true, code: true, position: true, district: true },
       orderBy: { name: "asc" },
     }),

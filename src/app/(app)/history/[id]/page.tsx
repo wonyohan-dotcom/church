@@ -24,7 +24,7 @@ export default async function HistoryDetailPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ error?: string }>;
 }) {
-  await requireStaff();
+  const staff = await requireStaff();
   const { id } = await params;
   const sp = await searchParams;
 
@@ -32,7 +32,7 @@ export default async function HistoryDetailPage({
     where: { id },
     include: { photos: { orderBy: { sortOrder: "asc" } } },
   });
-  if (!event) notFound();
+  if (!event || event.churchId !== staff.churchId) notFound();
 
   return (
     <>

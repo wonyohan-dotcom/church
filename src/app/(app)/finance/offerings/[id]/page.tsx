@@ -14,7 +14,7 @@ export default async function EditOfferingPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ error?: string }>;
 }) {
-  await requireFinance();
+  const staff = await requireFinance();
   const { id } = await params;
   const sp = await searchParams;
 
@@ -23,15 +23,18 @@ export default async function EditOfferingPage({
       where: { id },
       include: { member: { include: { district: true } } },
     }),
-    prisma.account.findMany({ where: { type: "INCOME" }, orderBy: { sortOrder: "asc" } }),
+    prisma.account.findMany({
+      where: { churchId: staff.churchId, type: "INCOME" },
+      orderBy: { sortOrder: "asc" },
+    }),
     prisma.member.findMany({
-      where: { status: "ACTIVE" },
+      where: { churchId: staff.churchId, status: "ACTIVE" },
       select: { id: true, name: true, code: true, position: true, district: true },
       orderBy: { name: "asc" },
     }),
   ]);
 
-  if (!offering) notFound();
+  if (!offering || offering.churchId !== staff.churchId) notFound();
 
   const pickable = members.map((m) => ({
     id: m.id,

@@ -16,11 +16,11 @@ export default async function NewExpensePage({
 }: {
   searchParams: Promise<{ error?: string }>;
 }) {
-  await requireFinance();
+  const staff = await requireFinance();
   const { error } = await searchParams;
 
   const accounts = await prisma.account.findMany({
-    where: { type: "EXPENSE", active: true },
+    where: { churchId: staff.churchId, type: "EXPENSE", active: true },
     orderBy: { sortOrder: "asc" },
   });
 

@@ -18,22 +18,28 @@ export type YearSummary = {
 };
 
 /**
- * 한 해의 수입·지출을 월별·계정과목별로 집계한다.
+ * 한 교회의 한 해 수입·지출을 월별·계정과목별로 집계한다.
  * 한 교회의 연간 거래 건수는 많아야 수천 건이라 DB에서 원장을 읽어 JS에서 합산한다.
  */
-export async function getYearSummary(year: number): Promise<YearSummary> {
+export async function getYearSummary(
+  churchId: string,
+  year: number,
+): Promise<YearSummary> {
   const range = yearRange(year);
 
   const [offerings, expenses, accounts] = await Promise.all([
     prisma.offering.findMany({
-      where: { date: range },
+      where: { churchId, date: range },
       select: { date: true, amount: true, accountId: true },
     }),
     prisma.expense.findMany({
-      where: { date: range },
+      where: { churchId, date: range },
       select: { date: true, amount: true, accountId: true },
     }),
-    prisma.account.findMany({ select: { id: true, name: true, sortOrder: true } }),
+    prisma.account.findMany({
+      where: { churchId },
+      select: { id: true, name: true, sortOrder: true },
+    }),
   ]);
 
   const nameOf = new Map(accounts.map((a) => [a.id, a.name]));
@@ -70,6 +76,17 @@ export async function getYearSummary(year: number): Promise<YearSummary> {
     incomeByAccount: toList(incomeMap),
     expenseByAccount: toList(expenseMap),
   };
+}
+
+/** 교회 설립 이후 지금까지 남아 있는 잔액 */
+export async function getCurrentBalance(churchId: string) {
+  const [income, expense] = await Promise.all([
+    prisma.offering.aggregate({ where: { churchId }, _sum: { amount: true } }),
+    prisma.expense.aggregate({ where: { churchId }, _sum: { amount: true } }),
+  ]);
+  const totalIncome = income._sum.amount ?? 0;
+  const totalExpense = expense._sum.amount ?? 0;
+  return { totalIncome, totalExpense, balance: totalIncome - totalExpense };
 }
 
 /** 특정 교인의 해당 연도 헌금을 계정과목별로 묶는다. 기부금영수증 명세에 쓰인다. */

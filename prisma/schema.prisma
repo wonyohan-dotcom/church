@@ -1,5 +1,8 @@
 // 교회 통합 관리 시스템 — 데이터 모델
 // 교적 · 회계 · 기부금영수증 · 교회역사
+//
+// 여러 교회가 한 서버를 함께 씁니다. 교회별 자료는 churchId 로 완전히 분리되며,
+// 모든 조회는 로그인한 사람이 속한 교회로 범위가 제한됩니다.
 
 generator client {
   provider = "prisma-client"
@@ -11,22 +14,74 @@ datasource db {
 }
 
 // ─────────────────────────────────────────────
+// 교회
+// ─────────────────────────────────────────────
+
+model Church {
+  id   String @id @default(cuid())
+  name String
+
+  regNo          String? // 고유번호 / 사업자등록번호
+  representative String?
+  postalCode     String?
+  address        String?
+  phone          String?
+  logoUrl        String?
+  sealUrl        String? // 직인 이미지
+
+  receiptAutoIssue Boolean @default(true) // 신청 즉시 자동 발급
+  joinOpen         Boolean @default(true) // 성도의 가입 신청 허용 여부
+
+  users         User[]
+  members       Member[]
+  districts     District[]
+  households    Household[]
+  accounts      Account[]
+  offerings     Offering[]
+  expenses      Expense[]
+  budgets       Budget[]
+  receipts      DonationReceipt[]
+  historyEvents HistoryEvent[]
+  historyPhotos HistoryPhoto[]
+  auditLogs     AuditLog[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([name])
+}
+
+// ─────────────────────────────────────────────
 // 사용자 · 권한
-// role: ADMIN(관리자) | FINANCE(회계) | PASTOR(교역자) | MEMBER(성도)
+// role   : ADMIN(관리자) | FINANCE(회계) | PASTOR(교역자) | MEMBER(성도)
+// status : PENDING(승인대기) | ACTIVE(사용중) | REJECTED(거절) | SUSPENDED(정지)
 // ─────────────────────────────────────────────
 
 model User {
-  id          String    @id @default(cuid())
-  loginId     String    @unique
-  password    String
-  name        String
-  role        String    @default("MEMBER")
-  active      Boolean   @default(true)
-  mustChangePw Boolean  @default(false)
-  lastLoginAt DateTime?
+  id       String @id @default(cuid())
+  loginId  String @unique
+  password String
+  name     String
+  phone    String?
+
+  role   String @default("MEMBER")
+  status String @default("PENDING")
+
+  mustChangePw Boolean   @default(false)
+  lastLoginAt  DateTime?
+
+  churchId String
+  church   Church @relation(fields: [churchId], references: [id], onDelete: Cascade)
 
   memberId String? @unique
   member   Member? @relation("MemberAccount", fields: [memberId], references: [id], onDelete: SetNull)
+
+  // 가입 신청 처리 기록
+  approvedAt   DateTime?
+  approvedById String?
+  approvedBy   User?     @relation("Approver", fields: [approvedById], references: [id], onDelete: SetNull)
+  approvedUsers User[]   @relation("Approver")
+  rejectReason String?
 
   offeringsCreated Offering[]        @relation("OfferingCreator")
   expensesCreated  Expense[]         @relation("ExpenseCreator")
@@ -35,6 +90,9 @@ model User {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([churchId, status])
+  @@index([churchId, role])
 }
 
 // ─────────────────────────────────────────────
@@ -43,14 +101,19 @@ model User {
 
 model District {
   id         String  @id @default(cuid())
-  name       String  @unique
+  name       String
   leaderName String?
   sortOrder  Int     @default(0)
+
+  churchId String
+  church   Church @relation(fields: [churchId], references: [id], onDelete: Cascade)
 
   households Household[]
   members    Member[]
 
   createdAt DateTime @default(now())
+
+  @@unique([churchId, name])
 }
 
 model Household {
@@ -62,6 +125,9 @@ model Household {
   phone         String?
   note          String?
 
+  churchId String
+  church   Church @relation(fields: [churchId], references: [id], onDelete: Cascade)
+
   districtId String?
   district   District? @relation(fields: [districtId], references: [id], onDelete: SetNull)
 
@@ -69,11 +135,13 @@ model Household {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([churchId])
 }
 
 model Member {
   id        String  @id @default(cuid())
-  code      String  @unique // 교적번호
+  code      String // 교적번호 (교회 안에서만 고유)
   name      String
   nameHanja String?
   photoUrl  String?
@@ -87,6 +155,9 @@ model Member {
   postalCode    String?
   address       String?
   addressDetail String?
+
+  churchId String
+  church   Church @relation(fields: [churchId], references: [id], onDelete: Cascade)
 
   householdId  String?
   household    Household? @relation(fields: [householdId], references: [id], onDelete: SetNull)
@@ -117,8 +188,9 @@ model Member {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@index([name])
-  @@index([status])
+  @@unique([churchId, code])
+  @@index([churchId, name])
+  @@index([churchId, status])
   @@index([householdId])
 }
 
@@ -128,7 +200,7 @@ model Member {
 
 model Account {
   id   String @id @default(cuid())
-  code String @unique
+  code String
   name String
   type String // INCOME | EXPENSE
 
@@ -138,17 +210,26 @@ model Account {
   sortOrder  Int     @default(0)
   active     Boolean @default(true)
 
+  churchId String
+  church   Church @relation(fields: [churchId], references: [id], onDelete: Cascade)
+
   offerings Offering[]
   expenses  Expense[]
   budgets   Budget[]
 
   createdAt DateTime @default(now())
+
+  @@unique([churchId, code])
+  @@index([churchId, type])
 }
 
 model Offering {
   id     String   @id @default(cuid())
   date   DateTime
   amount Int
+
+  churchId String
+  church   Church @relation(fields: [churchId], references: [id], onDelete: Cascade)
 
   accountId String
   account   Account @relation(fields: [accountId], references: [id])
@@ -166,7 +247,7 @@ model Offering {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@index([date])
+  @@index([churchId, date])
   @@index([memberId])
   @@index([accountId])
 }
@@ -175,6 +256,9 @@ model Expense {
   id     String   @id @default(cuid())
   date   DateTime
   amount Int
+
+  churchId String
+  church   Church @relation(fields: [churchId], references: [id], onDelete: Cascade)
 
   accountId String
   account   Account @relation(fields: [accountId], references: [id])
@@ -191,7 +275,7 @@ model Expense {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@index([date])
+  @@index([churchId, date])
   @@index([accountId])
 }
 
@@ -200,10 +284,14 @@ model Budget {
   year   Int
   amount Int
 
+  churchId String
+  church   Church @relation(fields: [churchId], references: [id], onDelete: Cascade)
+
   accountId String
   account   Account @relation(fields: [accountId], references: [id], onDelete: Cascade)
 
   @@unique([year, accountId])
+  @@index([churchId, year])
 }
 
 // ─────────────────────────────────────────────
@@ -213,17 +301,20 @@ model Budget {
 
 model DonationReceipt {
   id        String @id @default(cuid())
-  receiptNo String @unique
+  receiptNo String
   year      Int
+
+  churchId String
+  church   Church @relation(fields: [churchId], references: [id], onDelete: Cascade)
 
   memberId String
   member   Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
 
   // 신청 시점 기부자 정보 스냅샷 (주민등록번호는 암호화 저장)
-  donorName    String
+  donorName     String
   donorRegNoEnc String?
-  donorAddress String?
-  donorPhone   String?
+  donorAddress  String?
+  donorPhone    String?
 
   totalAmount Int    @default(0)
   status      String @default("REQUESTED")
@@ -238,8 +329,9 @@ model DonationReceipt {
   items DonationReceiptItem[]
 
   @@unique([memberId, year])
-  @@index([status])
-  @@index([year])
+  @@unique([churchId, receiptNo])
+  @@index([churchId, status])
+  @@index([churchId, year])
 }
 
 model DonationReceiptItem {
@@ -248,10 +340,10 @@ model DonationReceiptItem {
   receiptId String
   receipt   DonationReceipt @relation(fields: [receiptId], references: [id], onDelete: Cascade)
 
-  accountName String
+  accountName  String
   donationCode String @default("41") // 41: 종교단체 기부금
-  amount      Int
-  count       Int    @default(0)
+  amount       Int
+  count        Int    @default(0)
 }
 
 // ─────────────────────────────────────────────
@@ -267,21 +359,27 @@ model HistoryEvent {
   content      String?
   pinned       Boolean  @default(false)
 
+  churchId String
+  church   Church @relation(fields: [churchId], references: [id], onDelete: Cascade)
+
   photos HistoryPhoto[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@index([date])
-  @@index([category])
+  @@index([churchId, date])
+  @@index([churchId, category])
 }
 
 model HistoryPhoto {
-  id      String  @id @default(cuid())
-  url     String
-  caption String?
-  takenAt DateTime?
-  sortOrder Int   @default(0)
+  id        String    @id @default(cuid())
+  url       String
+  caption   String?
+  takenAt   DateTime?
+  sortOrder Int       @default(0)
+
+  churchId String
+  church   Church @relation(fields: [churchId], references: [id], onDelete: Cascade)
 
   eventId String?
   event   HistoryEvent? @relation(fields: [eventId], references: [id], onDelete: SetNull)
@@ -289,39 +387,28 @@ model HistoryPhoto {
   createdAt DateTime @default(now())
 
   @@index([eventId])
+  @@index([churchId])
 }
 
 // ─────────────────────────────────────────────
-// 교회 기본 정보 · 감사 로그
+// 감사 로그
 // ─────────────────────────────────────────────
-
-model ChurchSetting {
-  id             String  @id @default("singleton")
-  name           String  @default("우리교회")
-  regNo          String? // 고유번호 / 사업자등록번호
-  representative String?
-  postalCode     String?
-  address        String?
-  phone          String?
-  logoUrl        String?
-  sealUrl        String? // 직인 이미지
-  receiptAutoIssue Boolean @default(true) // 신청 즉시 자동 발급
-
-  updatedAt DateTime @updatedAt
-}
 
 model AuditLog {
-  id       String   @id @default(cuid())
+  id       String  @id @default(cuid())
   action   String // CREATE | UPDATE | DELETE | ISSUE ...
   entity   String // Offering | Expense | Member ...
   entityId String?
   summary  String?
+
+  churchId String
+  church   Church @relation(fields: [churchId], references: [id], onDelete: Cascade)
 
   userId String?
   user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   createdAt DateTime @default(now())
 
-  @@index([createdAt])
-  @@index([entity])
+  @@index([churchId, createdAt])
+  @@index([churchId, entity])
 }

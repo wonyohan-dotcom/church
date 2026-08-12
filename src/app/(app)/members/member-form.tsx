@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Card, CardTitle, Field } from "@/components/ui";
 import { PhotoInput, SubmitButton } from "@/components/form";
+import { AddressFields } from "@/components/address-fields";
 import {
   GENDERS,
   HOUSEHOLD_RELATIONS,
@@ -111,24 +112,13 @@ export function MemberForm({
               defaultValue={member?.email ?? ""}
             />
           </Field>
-          <Field label="우편번호">
-            <input
-              name="postalCode"
-              inputMode="numeric"
-              className="field"
-              defaultValue={member?.postalCode ?? ""}
+          <div className="sm:col-span-2">
+            <AddressFields
+              defaultPostal={member?.postalCode ?? ""}
+              defaultAddress={member?.address ?? ""}
+              defaultDetail={member?.addressDetail ?? ""}
             />
-          </Field>
-          <Field label="주소" className="sm:col-span-2">
-            <input name="address" className="field" defaultValue={member?.address ?? ""} />
-          </Field>
-          <Field label="상세 주소" className="sm:col-span-2">
-            <input
-              name="addressDetail"
-              className="field"
-              defaultValue={member?.addressDetail ?? ""}
-            />
-          </Field>
+          </div>
         </div>
       </Card>
 

@@ -11,7 +11,7 @@ import { parseDate, str } from "@/lib/format";
 const MAX_PHOTOS = 10;
 
 /** 폼에 담긴 사진들을 저장해 연혁에 붙인다. */
-async function attachPhotos(eventId: string, formData: FormData) {
+async function attachPhotos(churchId: string, eventId: string, formData: FormData) {
   const files = formData.getAll("photos").slice(0, MAX_PHOTOS);
   const captions = formData.getAll("photoCaption");
 
@@ -22,6 +22,7 @@ async function attachPhotos(eventId: string, formData: FormData) {
     if (!url) continue;
     await prisma.historyPhoto.create({
       data: {
+        churchId,
         eventId,
         url,
         caption: typeof captions[i] === "string" ? (captions[i] as string) || null : null,
@@ -49,16 +50,17 @@ export async function createHistoryEvent(formData: FormData) {
   if (!data.title || !data.date) redirect("/history/new?error=input");
 
   const event = await prisma.historyEvent.create({
-    data: { ...data, date: data.date },
+    data: { ...data, churchId: user.churchId, date: data.date },
   });
 
   try {
-    await attachPhotos(event.id, formData);
+    await attachPhotos(user.churchId, event.id, formData);
   } catch {
     redirect(`/history/${event.id}?error=photo`);
   }
 
   await logAudit({
+    churchId: user.churchId,
     action: "CREATE",
     entity: "HistoryEvent",
     entityId: event.id,
@@ -76,18 +78,22 @@ export async function updateHistoryEvent(id: string, formData: FormData) {
 
   if (!data.title || !data.date) redirect(`/history/${id}/edit?error=input`);
 
+  const existing = await prisma.historyEvent.findUnique({ where: { id } });
+  if (!existing || existing.churchId !== user.churchId) redirect("/history");
+
   await prisma.historyEvent.update({
     where: { id },
     data: { ...data, date: data.date },
   });
 
   try {
-    await attachPhotos(id, formData);
+    await attachPhotos(user.churchId, id, formData);
   } catch {
     redirect(`/history/${id}?error=photo`);
   }
 
   await logAudit({
+    churchId: user.churchId,
     action: "UPDATE",
     entity: "HistoryEvent",
     entityId: id,
@@ -107,7 +113,7 @@ export async function deleteHistoryEvent(id: string) {
     where: { id },
     include: { photos: true },
   });
-  if (!event) redirect("/history");
+  if (!event || event.churchId !== user.churchId) redirect("/history");
 
   // 연혁을 지우면 붙어 있던 사진 파일도 함께 정리한다.
   for (const photo of event.photos) await deleteImage(photo.url);
@@ -115,6 +121,7 @@ export async function deleteHistoryEvent(id: string) {
   await prisma.historyEvent.delete({ where: { id } });
 
   await logAudit({
+    churchId: user.churchId,
     action: "DELETE",
     entity: "HistoryEvent",
     entityId: id,
@@ -127,10 +134,10 @@ export async function deleteHistoryEvent(id: string) {
 }
 
 export async function deleteHistoryPhoto(photoId: string) {
-  await requireStaff();
+  const user = await requireStaff();
 
   const photo = await prisma.historyPhoto.findUnique({ where: { id: photoId } });
-  if (!photo) return;
+  if (!photo || photo.churchId !== user.churchId) return;
 
   await prisma.historyPhoto.delete({ where: { id: photoId } });
   await deleteImage(photo.url);

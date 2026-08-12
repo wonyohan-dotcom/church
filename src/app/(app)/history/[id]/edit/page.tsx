@@ -14,12 +14,12 @@ export default async function EditHistoryPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ error?: string }>;
 }) {
-  await requireStaff();
+  const staff = await requireStaff();
   const { id } = await params;
   const { error } = await searchParams;
 
   const event = await prisma.historyEvent.findUnique({ where: { id } });
-  if (!event) notFound();
+  if (!event || event.churchId !== staff.churchId) notFound();
 
   return (
     <>

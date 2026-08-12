@@ -42,7 +42,7 @@ export default async function ReceiptsPage({
 }: {
   searchParams: Promise<{ year?: string; status?: string; ok?: string; error?: string }>;
 }) {
-  await requireStaff();
+  const staff = await requireStaff();
   const sp = await searchParams;
 
   const now = new Date();
@@ -52,18 +52,18 @@ export default async function ReceiptsPage({
 
   const [receipts, church, counts, members] = await Promise.all([
     prisma.donationReceipt.findMany({
-      where: { year, ...(status !== "ALL" ? { status } : {}) },
+      where: { churchId: staff.churchId, year, ...(status !== "ALL" ? { status } : {}) },
       include: { member: true, issuedBy: true },
       orderBy: [{ status: "asc" }, { requestedAt: "desc" }],
     }),
-    getChurch(),
+    getChurch(staff.churchId),
     prisma.donationReceipt.groupBy({
       by: ["status"],
-      where: { year },
+      where: { churchId: staff.churchId, year },
       _count: true,
     }),
     prisma.member.findMany({
-      where: { status: "ACTIVE" },
+      where: { churchId: staff.churchId, status: "ACTIVE" },
       select: { id: true, name: true, code: true },
       orderBy: { name: "asc" },
     }),

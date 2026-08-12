@@ -19,16 +19,19 @@ export default async function EditExpensePage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ error?: string }>;
 }) {
-  await requireFinance();
+  const staff = await requireFinance();
   const { id } = await params;
   const { error } = await searchParams;
 
   const [expense, accounts] = await Promise.all([
     prisma.expense.findUnique({ where: { id } }),
-    prisma.account.findMany({ where: { type: "EXPENSE" }, orderBy: { sortOrder: "asc" } }),
+    prisma.account.findMany({
+      where: { churchId: staff.churchId, type: "EXPENSE" },
+      orderBy: { sortOrder: "asc" },
+    }),
   ]);
 
-  if (!expense) notFound();
+  if (!expense || expense.churchId !== staff.churchId) notFound();
 
   return (
     <>

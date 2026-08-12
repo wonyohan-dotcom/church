@@ -32,14 +32,18 @@ export default async function MyPage({
   const lastYear = thisYear - 1;
 
   const [member, thisYearData, lastYearData, receipts] = await Promise.all([
-    prisma.member.findUnique({
-      where: { id: user.memberId },
+    prisma.member.findFirst({
+      where: { id: user.memberId, churchId: user.churchId },
       include: { district: true },
     }),
     getMemberYearOfferings(user.memberId, thisYear),
     getMemberYearOfferings(user.memberId, lastYear),
     prisma.donationReceipt.findMany({
-      where: { memberId: user.memberId, status: { not: "CANCELED" } },
+      where: {
+        churchId: user.churchId,
+        memberId: user.memberId,
+        status: { not: "CANCELED" },
+      },
       orderBy: { year: "desc" },
       take: 3,
     }),

@@ -25,7 +25,7 @@ export default async function ReceiptDetailPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ ok?: string }>;
 }) {
-  await requireStaff();
+  const staff = await requireStaff();
   const { id } = await params;
   const sp = await searchParams;
 
@@ -33,9 +33,9 @@ export default async function ReceiptDetailPage({
     where: { id },
     include: { items: true, member: true, issuedBy: true },
   });
-  if (!receipt) notFound();
+  if (!receipt || receipt.churchId !== staff.churchId) notFound();
 
-  const church = await getChurch();
+  const church = await getChurch(staff.churchId);
   const isIssued = receipt.status === "ISSUED";
 
   return (

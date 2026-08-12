@@ -12,7 +12,7 @@ import { ROLES, type Role } from "@/lib/constants";
 export async function updateChurch(formData: FormData) {
   const admin = await requireAdmin();
 
-  const current = await prisma.churchSetting.findUnique({ where: { id: "singleton" } });
+  const current = await prisma.church.findUnique({ where: { id: admin.churchId } });
 
   let logoUrl = current?.logoUrl ?? null;
   let sealUrl = current?.sealUrl ?? null;
@@ -39,36 +39,31 @@ export async function updateChurch(formData: FormData) {
     redirect("/settings?error=image");
   }
 
-  await prisma.churchSetting.upsert({
-    where: { id: "singleton" },
-    update: {
+  // 교회 주소는 한 칸에 담기므로 상세 주소를 뒤에 붙여 둔다.
+  const address = [str(formData.get("address")), str(formData.get("addressDetail"))]
+    .filter(Boolean)
+    .join(" ");
+
+  await prisma.church.update({
+    where: { id: admin.churchId },
+    data: {
       name: str(formData.get("name")) ?? "우리교회",
       regNo: str(formData.get("regNo")),
       representative: str(formData.get("representative")),
       postalCode: str(formData.get("postalCode")),
-      address: str(formData.get("address")),
+      address: address || null,
       phone: str(formData.get("phone")),
       receiptAutoIssue: formData.get("receiptAutoIssue") === "1",
-      logoUrl,
-      sealUrl,
-    },
-    create: {
-      id: "singleton",
-      name: str(formData.get("name")) ?? "우리교회",
-      regNo: str(formData.get("regNo")),
-      representative: str(formData.get("representative")),
-      postalCode: str(formData.get("postalCode")),
-      address: str(formData.get("address")),
-      phone: str(formData.get("phone")),
-      receiptAutoIssue: formData.get("receiptAutoIssue") === "1",
+      joinOpen: formData.get("joinOpen") === "1",
       logoUrl,
       sealUrl,
     },
   });
 
   await logAudit({
+    churchId: admin.churchId,
     action: "UPDATE",
-    entity: "ChurchSetting",
+    entity: "Church",
     summary: "교회 기본 정보 수정",
     userId: admin.id,
   });
@@ -95,10 +90,20 @@ export async function createStaffUser(formData: FormData) {
   }
 
   await prisma.user.create({
-    data: { loginId, name, password: await hashPassword(password), role },
+    data: {
+      loginId,
+      name,
+      password: await hashPassword(password),
+      role,
+      status: "ACTIVE",
+      churchId: admin.churchId,
+      approvedAt: new Date(),
+      approvedById: admin.id,
+    },
   });
 
   await logAudit({
+    churchId: admin.churchId,
     action: "CREATE",
     entity: "User",
     summary: `직원 계정 생성: ${name}(${loginId}) · ${ROLES[role]}`,
@@ -109,28 +114,35 @@ export async function createStaffUser(formData: FormData) {
   redirect("/settings?ok=user-created");
 }
 
+/** 계정 사용을 막거나 다시 풀어 준다. */
 export async function toggleUserActive(id: string) {
   const admin = await requireAdmin();
 
   const user = await prisma.user.findUnique({ where: { id } });
-  if (!user) return;
+  if (!user || user.churchId !== admin.churchId) return;
 
   // 자기 계정을 스스로 잠그면 아무도 관리할 수 없게 된다.
   if (user.id === admin.id) redirect("/settings?error=self");
 
-  await prisma.user.update({ where: { id }, data: { active: !user.active } });
+  const suspended = user.status === "SUSPENDED";
+  await prisma.user.update({
+    where: { id },
+    data: { status: suspended ? "ACTIVE" : "SUSPENDED" },
+  });
 
   await logAudit({
+    churchId: admin.churchId,
     action: "UPDATE",
     entity: "User",
     entityId: id,
-    summary: `계정 ${user.active ? "잠금" : "해제"}: ${user.name}`,
+    summary: `계정 ${suspended ? "사용 재개" : "정지"}: ${user.name}`,
     userId: admin.id,
   });
 
   revalidatePath("/settings");
 }
 
+/** 앱 사용 범위(권한)를 바꾼다. */
 export async function changeUserRole(id: string, formData: FormData) {
   const admin = await requireAdmin();
 
@@ -138,17 +150,20 @@ export async function changeUserRole(id: string, formData: FormData) {
   if (!(role in ROLES)) return;
 
   const user = await prisma.user.findUnique({ where: { id } });
-  if (!user) return;
+  if (!user || user.churchId !== admin.churchId) return;
 
   // 마지막 관리자의 권한을 낮추면 관리 화면에 들어갈 사람이 사라진다.
   if (user.role === "ADMIN" && role !== "ADMIN") {
-    const adminCount = await prisma.user.count({ where: { role: "ADMIN", active: true } });
+    const adminCount = await prisma.user.count({
+      where: { churchId: admin.churchId, role: "ADMIN", status: "ACTIVE" },
+    });
     if (adminCount <= 1) redirect("/settings?error=last-admin");
   }
 
   await prisma.user.update({ where: { id }, data: { role } });
 
   await logAudit({
+    churchId: admin.churchId,
     action: "UPDATE",
     entity: "User",
     entityId: id,
@@ -166,7 +181,7 @@ export async function resetUserPassword(id: string, formData: FormData) {
   if (password.length < 8) redirect("/settings?error=user-input");
 
   const user = await prisma.user.findUnique({ where: { id } });
-  if (!user) return;
+  if (!user || user.churchId !== admin.churchId) return;
 
   await prisma.user.update({
     where: { id },
@@ -174,6 +189,7 @@ export async function resetUserPassword(id: string, formData: FormData) {
   });
 
   await logAudit({
+    churchId: admin.churchId,
     action: "UPDATE",
     entity: "User",
     entityId: id,

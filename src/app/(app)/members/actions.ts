@@ -8,9 +8,10 @@ import { logAudit } from "@/lib/church";
 import { deleteImage, saveImage } from "@/lib/upload";
 import { parseDate, str } from "@/lib/format";
 
-/** 비어 있지 않은 다음 교적번호를 만든다. (예: 0001, 0002 …) */
-async function nextMemberCode(): Promise<string> {
+/** 그 교회 안에서 비어 있지 않은 다음 교적번호를 만든다. (예: 0001, 0002 …) */
+async function nextMemberCode(churchId: string): Promise<string> {
   const rows = await prisma.member.findMany({
+    where: { churchId },
     select: { code: true },
     orderBy: { code: "desc" },
     take: 1,
@@ -64,10 +65,11 @@ export async function createMember(formData: FormData) {
   }
 
   const member = await prisma.member.create({
-    data: { ...data, code: await nextMemberCode(), photoUrl },
+    data: { ...data, churchId: user.churchId, code: await nextMemberCode(user.churchId), photoUrl },
   });
 
   await logAudit({
+    churchId: user.churchId,
     action: "CREATE",
     entity: "Member",
     entityId: member.id,
@@ -86,7 +88,7 @@ export async function updateMember(id: string, formData: FormData) {
   if (!data.name) redirect(`/members/${id}/edit?error=name`);
 
   const current = await prisma.member.findUnique({ where: { id } });
-  if (!current) redirect("/members");
+  if (!current || current.churchId !== user.churchId) redirect("/members");
 
   let photoUrl = current.photoUrl;
   try {
@@ -105,6 +107,7 @@ export async function updateMember(id: string, formData: FormData) {
   await prisma.member.update({ where: { id }, data: { ...data, photoUrl } });
 
   await logAudit({
+    churchId: user.churchId,
     action: "UPDATE",
     entity: "Member",
     entityId: id,
@@ -122,9 +125,14 @@ export async function deleteMember(id: string) {
 
   const member = await prisma.member.findUnique({
     where: { id },
-    select: { name: true, photoUrl: true, _count: { select: { offerings: true } } },
+    select: {
+      name: true,
+      photoUrl: true,
+      churchId: true,
+      _count: { select: { offerings: true } },
+    },
   });
-  if (!member) redirect("/members");
+  if (!member || member.churchId !== user.churchId) redirect("/members");
 
   // 헌금 기록이 남아 있으면 회계 이력이 끊기므로 지우지 않고 '소천/이명' 상태로 관리하게 안내한다.
   if (member._count.offerings > 0) {
@@ -135,6 +143,7 @@ export async function deleteMember(id: string) {
   await deleteImage(member.photoUrl);
 
   await logAudit({
+    churchId: user.churchId,
     action: "DELETE",
     entity: "Member",
     entityId: id,
@@ -163,7 +172,7 @@ export async function createMemberAccount(memberId: string, formData: FormData) 
   }
 
   const member = await prisma.member.findUnique({ where: { id: memberId } });
-  if (!member) redirect("/members");
+  if (!member || member.churchId !== admin.churchId) redirect("/members");
 
   if (await prisma.user.findUnique({ where: { loginId } })) {
     redirect(`/members/${memberId}?error=account-duplicate`);
@@ -175,12 +184,17 @@ export async function createMemberAccount(memberId: string, formData: FormData) 
       password: await hashPassword(password),
       name: member.name,
       role: "MEMBER",
+      status: "ACTIVE",
+      churchId: admin.churchId,
       memberId,
       mustChangePw: true,
+      approvedAt: new Date(),
+      approvedById: admin.id,
     },
   });
 
   await logAudit({
+    churchId: admin.churchId,
     action: "CREATE",
     entity: "User",
     entityId: memberId,
@@ -199,14 +213,15 @@ export async function resetMemberPassword(memberId: string, formData: FormData) 
   if (password.length < 8) redirect(`/members/${memberId}?error=account-input`);
 
   const user = await prisma.user.findUnique({ where: { memberId } });
-  if (!user) redirect(`/members/${memberId}`);
+  if (!user || user.churchId !== admin.churchId) redirect(`/members/${memberId}`);
 
   await prisma.user.update({
     where: { id: user.id },
-    data: { password: await hashPassword(password), mustChangePw: true, active: true },
+    data: { password: await hashPassword(password), mustChangePw: true, status: "ACTIVE" },
   });
 
   await logAudit({
+    churchId: admin.churchId,
     action: "UPDATE",
     entity: "User",
     entityId: user.id,
@@ -221,32 +236,35 @@ export async function resetMemberPassword(memberId: string, formData: FormData) 
 /* ── 교구 · 가정 ─────────────────────────── */
 
 export async function createDistrict(formData: FormData) {
-  await requireStaff();
+  const user = await requireStaff();
   const name = str(formData.get("name"));
   if (!name) return;
 
   await prisma.district.upsert({
-    where: { name },
+    where: { churchId_name: { churchId: user.churchId, name } },
     update: { leaderName: str(formData.get("leaderName")) },
-    create: { name, leaderName: str(formData.get("leaderName")) },
+    create: { churchId: user.churchId, name, leaderName: str(formData.get("leaderName")) },
   });
 
   revalidatePath("/members/groups");
 }
 
 export async function deleteDistrict(id: string) {
-  await requireStaff();
+  const user = await requireStaff();
+  const district = await prisma.district.findUnique({ where: { id } });
+  if (!district || district.churchId !== user.churchId) return;
   await prisma.district.delete({ where: { id } });
   revalidatePath("/members/groups");
 }
 
 export async function createHousehold(formData: FormData) {
-  await requireStaff();
+  const user = await requireStaff();
   const name = str(formData.get("name"));
   if (!name) return;
 
   await prisma.household.create({
     data: {
+      churchId: user.churchId,
       name,
       districtId: str(formData.get("districtId")),
       postalCode: str(formData.get("postalCode")),
@@ -261,7 +279,9 @@ export async function createHousehold(formData: FormData) {
 }
 
 export async function deleteHousehold(id: string) {
-  await requireStaff();
+  const user = await requireStaff();
+  const household = await prisma.household.findUnique({ where: { id } });
+  if (!household || household.churchId !== user.churchId) return;
   await prisma.household.delete({ where: { id } });
   revalidatePath("/members/groups");
 }

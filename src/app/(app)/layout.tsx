@@ -4,7 +4,7 @@ import { MobileTabBar, MobileTopBar, Sidebar } from "@/components/nav";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const user = await requireStaff();
-  const church = await getChurch();
+  const church = await getChurch(user.churchId);
 
   return (
     <div className="flex min-h-dvh bg-bg">

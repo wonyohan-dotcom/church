@@ -45,6 +45,7 @@ export default async function OfferingsPage({
       : { gte: new Date(year, 0, 1), lt: new Date(year + 1, 0, 1) };
 
   const where: Prisma.OfferingWhereInput = {
+    churchId: staff.churchId,
     date: dateFilter,
     ...(accountId ? { accountId } : {}),
     ...(memberId ? { memberId } : {}),
@@ -61,10 +62,12 @@ export default async function OfferingsPage({
     prisma.offering.count({ where }),
     prisma.offering.aggregate({ where, _sum: { amount: true } }),
     prisma.account.findMany({
-      where: { type: "INCOME" },
+      where: { churchId: staff.churchId, type: "INCOME" },
       orderBy: { sortOrder: "asc" },
     }),
-    memberId ? prisma.member.findUnique({ where: { id: memberId } }) : null,
+    memberId
+      ? prisma.member.findFirst({ where: { id: memberId, churchId: staff.churchId } })
+      : null,
   ]);
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));

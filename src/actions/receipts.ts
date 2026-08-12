@@ -11,8 +11,8 @@ import { STAFF_ROLES } from "@/lib/constants";
 import { str } from "@/lib/format";
 
 /** 연도별 일련번호. 예: 2026-0001 */
-async function nextReceiptNo(year: number): Promise<string> {
-  const count = await prisma.donationReceipt.count({ where: { year } });
+async function nextReceiptNo(churchId: string, year: number): Promise<string> {
+  const count = await prisma.donationReceipt.count({ where: { churchId, year } });
   return `${year}-${String(count + 1).padStart(4, "0")}`;
 }
 
@@ -58,7 +58,10 @@ export async function requestReceipt(formData: FormData) {
   const regNo = normalizeRegNo(regNoRaw);
   if (!regNo) redirect("/my/receipts?error=regno");
 
-  const address = str(formData.get("address"));
+  // 주소 검색으로 채운 도로명 주소와 직접 적은 상세 주소를 한 줄로 합친다.
+  const address = [str(formData.get("address")), str(formData.get("addressDetail"))]
+    .filter(Boolean)
+    .join(" ");
   if (!address) redirect("/my/receipts?error=address");
 
   const member = await prisma.member.findUnique({ where: { id: user.memberId } });
@@ -76,7 +79,7 @@ export async function requestReceipt(formData: FormData) {
     redirect(`/my/receipts?error=no-offering&year=${year}`);
   }
 
-  const church = await getChurch();
+  const church = await getChurch(member.churchId);
   const autoIssue = church.receiptAutoIssue;
 
   const receipt = existing
@@ -95,7 +98,8 @@ export async function requestReceipt(formData: FormData) {
       })
     : await prisma.donationReceipt.create({
         data: {
-          receiptNo: await nextReceiptNo(year),
+          churchId: member.churchId,
+          receiptNo: await nextReceiptNo(member.churchId, year),
           year,
           memberId: member.id,
           donorName: member.name,
@@ -110,6 +114,7 @@ export async function requestReceipt(formData: FormData) {
   await fillReceiptItems(receipt.id, member.id, year);
 
   await logAudit({
+    churchId: member.churchId,
     action: autoIssue ? "ISSUE" : "REQUEST",
     entity: "DonationReceipt",
     entityId: receipt.id,
@@ -129,7 +134,7 @@ export async function cancelReceipt(id: string) {
   const user = await requireUser();
 
   const receipt = await prisma.donationReceipt.findUnique({ where: { id } });
-  if (!receipt) redirect("/my/receipts");
+  if (!receipt || receipt.churchId !== user.churchId) redirect("/my/receipts");
 
   const isOwner = receipt.memberId === user.memberId;
   const isStaff = STAFF_ROLES.includes(user.role);
@@ -146,6 +151,7 @@ export async function cancelReceipt(id: string) {
   });
 
   await logAudit({
+    churchId: receipt.churchId,
     action: "CANCEL",
     entity: "DonationReceipt",
     entityId: id,
@@ -164,7 +170,7 @@ export async function issueReceipt(id: string) {
   const staff = await requireStaff();
 
   const receipt = await prisma.donationReceipt.findUnique({ where: { id } });
-  if (!receipt) redirect("/receipts");
+  if (!receipt || receipt.churchId !== staff.churchId) redirect("/receipts");
 
   // 발급 직전에 장부를 다시 읽어 최신 금액으로 맞춘다.
   const total = await fillReceiptItems(receipt.id, receipt.memberId, receipt.year);
@@ -180,6 +186,7 @@ export async function issueReceipt(id: string) {
   });
 
   await logAudit({
+    churchId: staff.churchId,
     action: "ISSUE",
     entity: "DonationReceipt",
     entityId: id,
@@ -197,7 +204,7 @@ export async function rejectReceipt(id: string, formData: FormData) {
 
   const reason = str(formData.get("reason"));
   const receipt = await prisma.donationReceipt.findUnique({ where: { id } });
-  if (!receipt) redirect("/receipts");
+  if (!receipt || receipt.churchId !== staff.churchId) redirect("/receipts");
 
   await prisma.donationReceipt.update({
     where: { id },
@@ -205,6 +212,7 @@ export async function rejectReceipt(id: string, formData: FormData) {
   });
 
   await logAudit({
+    churchId: staff.churchId,
     action: "REJECT",
     entity: "DonationReceipt",
     entityId: id,
@@ -229,7 +237,7 @@ export async function issueReceiptForMember(formData: FormData) {
   if (!memberId || !Number.isInteger(year)) redirect("/receipts?error=input");
 
   const member = await prisma.member.findUnique({ where: { id: memberId } });
-  if (!member) redirect("/receipts?error=input");
+  if (!member || member.churchId !== staff.churchId) redirect("/receipts?error=input");
 
   const { deductibleTotal } = await getMemberYearOfferings(memberId, year);
   if (deductibleTotal <= 0) redirect("/receipts?error=no-offering");
@@ -255,7 +263,8 @@ export async function issueReceiptForMember(formData: FormData) {
       })
     : await prisma.donationReceipt.create({
         data: {
-          receiptNo: await nextReceiptNo(year),
+          churchId: staff.churchId,
+          receiptNo: await nextReceiptNo(staff.churchId, year),
           year,
           memberId,
           donorName: member.name,
@@ -271,6 +280,7 @@ export async function issueReceiptForMember(formData: FormData) {
   await fillReceiptItems(receipt.id, memberId, year);
 
   await logAudit({
+    churchId: staff.churchId,
     action: "ISSUE",
     entity: "DonationReceipt",
     entityId: receipt.id,
@@ -286,11 +296,12 @@ export async function issueReceiptForMember(formData: FormData) {
 export async function refreshReceipt(id: string) {
   const staff = await requireStaff();
   const receipt = await prisma.donationReceipt.findUnique({ where: { id } });
-  if (!receipt) redirect("/receipts");
+  if (!receipt || receipt.churchId !== staff.churchId) redirect("/receipts");
 
   await fillReceiptItems(receipt.id, receipt.memberId, receipt.year);
 
   await logAudit({
+    churchId: staff.churchId,
     action: "UPDATE",
     entity: "DonationReceipt",
     entityId: id,

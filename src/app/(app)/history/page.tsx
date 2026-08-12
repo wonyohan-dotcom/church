@@ -26,13 +26,14 @@ export default async function HistoryPage({
 }: {
   searchParams: Promise<{ category?: string; q?: string }>;
 }) {
-  await requireStaff();
+  const staff = await requireStaff();
   const sp = await searchParams;
 
   const category = sp.category ?? "";
   const q = sp.q?.trim() ?? "";
 
   const where: Prisma.HistoryEventWhereInput = {
+    churchId: staff.churchId,
     ...(category ? { category } : {}),
     ...(q ? { OR: [{ title: { contains: q } }, { content: { contains: q } }] } : {}),
   };
@@ -43,9 +44,9 @@ export default async function HistoryPage({
       include: { photos: { orderBy: { sortOrder: "asc" }, take: 4 } },
       orderBy: [{ date: "desc" }],
     }),
-    getChurch(),
-    prisma.historyEvent.count(),
-    prisma.historyPhoto.count(),
+    getChurch(staff.churchId),
+    prisma.historyEvent.count({ where: { churchId: staff.churchId } }),
+    prisma.historyPhoto.count({ where: { churchId: staff.churchId } }),
   ]);
 
   // 연도별로 묶어 세로 연표처럼 보여 준다.
@@ -57,7 +58,10 @@ export default async function HistoryPage({
   }
   const yearsDesc = [...byYear.keys()].sort((a, b) => b - a);
 
-  const oldest = await prisma.historyEvent.findFirst({ orderBy: { date: "asc" } });
+  const oldest = await prisma.historyEvent.findFirst({
+    where: { churchId: staff.churchId },
+    orderBy: { date: "asc" },
+  });
   const spanYears = oldest
     ? new Date().getFullYear() - oldest.date.getFullYear()
     : 0;

@@ -40,24 +40,41 @@ export default async function DashboardPage({
     totalIncome,
     totalExpense,
     pendingReceipts,
+    pendingSignups,
     recentHistory,
   ] = await Promise.all([
-    getChurch(),
-    getYearSummary(year),
-    prisma.member.count({ where: { status: "ACTIVE" } }),
+    getChurch(staff.churchId),
+    getYearSummary(staff.churchId, year),
+    prisma.member.count({ where: { churchId: staff.churchId, status: "ACTIVE" } }),
     prisma.offering.aggregate({
-      where: { date: monthRange(year, month) },
+      where: { churchId: staff.churchId, date: monthRange(year, month) },
       _sum: { amount: true },
     }),
     prisma.expense.aggregate({
-      where: { date: monthRange(year, month) },
+      where: { churchId: staff.churchId, date: monthRange(year, month) },
       _sum: { amount: true },
     }),
     // 기간을 걸지 않은 전체 합계 — 지금 교회에 남아 있는 잔액을 구하기 위한 값
-    prisma.offering.aggregate({ _sum: { amount: true } }),
-    prisma.expense.aggregate({ _sum: { amount: true } }),
-    prisma.donationReceipt.count({ where: { status: "REQUESTED" } }),
-    prisma.historyEvent.findMany({ orderBy: { date: "desc" }, take: 4 }),
+    prisma.offering.aggregate({
+      where: { churchId: staff.churchId },
+      _sum: { amount: true },
+    }),
+    prisma.expense.aggregate({
+      where: { churchId: staff.churchId },
+      _sum: { amount: true },
+    }),
+    prisma.donationReceipt.count({
+      where: { churchId: staff.churchId, status: "REQUESTED" },
+    }),
+    // 관리자만 승인할 수 있으므로 관리자 화면에서만 세어 온다.
+    staff.role === "ADMIN"
+      ? prisma.user.count({ where: { churchId: staff.churchId, status: "PENDING" } })
+      : Promise.resolve(0),
+    prisma.historyEvent.findMany({
+      where: { churchId: staff.churchId },
+      orderBy: { date: "desc" },
+      take: 4,
+    }),
   ]);
 
   const totalIncomeSum = totalIncome._sum.amount ?? 0;
@@ -67,7 +84,7 @@ export default async function DashboardPage({
 
   // 이번 달 생일자 — 저장된 생년월일에서 월만 비교한다.
   const activeMembers = await prisma.member.findMany({
-    where: { status: "ACTIVE", birthDate: { not: null } },
+    where: { churchId: staff.churchId, status: "ACTIVE", birthDate: { not: null } },
     select: { id: true, name: true, photoUrl: true, birthDate: true, position: true },
   });
   const birthdays = activeMembers
@@ -131,6 +148,17 @@ export default async function DashboardPage({
       {sp.error === "forbidden" && (
         <div className="mb-5">
           <Alert tone="warn">해당 기능에 접근할 권한이 없습니다.</Alert>
+        </div>
+      )}
+
+      {pendingSignups > 0 && (
+        <div className="mb-5">
+          <Alert tone="warn">
+            승인을 기다리는 가입 신청이 {pendingSignups}건 있습니다.{" "}
+            <Link href="/settings" className="font-bold underline">
+              확인하고 권한 정해 주기
+            </Link>
+          </Alert>
         </div>
       )}
 

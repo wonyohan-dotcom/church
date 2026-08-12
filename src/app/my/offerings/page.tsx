@@ -32,7 +32,10 @@ export default async function MyOfferingsPage({
 
   const [data, member] = await Promise.all([
     getMemberYearOfferings(user.memberId, year),
-    prisma.member.findUnique({ where: { id: user.memberId }, select: { name: true } }),
+    prisma.member.findFirst({
+      where: { id: user.memberId, churchId: user.churchId },
+      select: { name: true },
+    }),
   ]);
 
   const monthly = Array.from({ length: 12 }, (_, i) => ({ month: i + 1, amount: 0 }));
