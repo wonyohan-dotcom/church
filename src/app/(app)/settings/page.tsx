@@ -20,6 +20,7 @@ import {
 } from "@/components/ui";
 import { PhotoInput, SubmitButton } from "@/components/form";
 import { AddressFields } from "@/components/address-fields";
+import { PushToggle } from "@/components/push-toggle";
 import { approveUser, rejectUser } from "@/actions/account";
 import {
   changeUserRole,
@@ -182,6 +183,17 @@ export default async function SettingsPage({
             ))}
           </ul>
         )}
+      </Card>
+
+      {/* ── 알림 ── */}
+      <Card className="mb-5">
+        <CardTitle>알림 받기</CardTitle>
+        <p className="mb-4 text-sm leading-relaxed text-ink-3">
+          켜 두면 <b className="font-semibold text-ink-2">새 가입 신청</b>과{" "}
+          <b className="font-semibold text-ink-2">기부금영수증 신청</b>이 들어올 때 이 기기로
+          알려 드립니다. 기기마다 따로 켜야 합니다.
+        </p>
+        <PushToggle />
       </Card>
 
       {/* ── 교회 정보 ── */}

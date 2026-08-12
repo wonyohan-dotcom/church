@@ -6,6 +6,7 @@ import { RECEIPT_STATUS, type ReceiptStatus } from "@/lib/constants";
 import { won, ymd } from "@/lib/format";
 import { Alert, Avatar, Badge, Card, CardTitle, PageHeader, StatCard } from "@/components/ui";
 import { IconChevronRight, IconReceipt } from "@/components/icons";
+import { PushToggle } from "@/components/push-toggle";
 
 export const metadata = { title: "성도 서비스" };
 
@@ -184,6 +185,14 @@ export default async function MyPage({
               ))}
           </ul>
         )}
+      </Card>
+
+      <Card className="mt-5">
+        <CardTitle>알림 받기</CardTitle>
+        <p className="mb-4 text-sm leading-relaxed text-ink-3">
+          켜 두면 기부금영수증이 발급되었을 때 바로 알려 드립니다.
+        </p>
+        <PushToggle />
       </Card>
 
       <p className="mt-6 text-center text-xs leading-relaxed text-ink-3">

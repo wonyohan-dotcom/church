@@ -8,7 +8,8 @@ import { getChurch, logAudit } from "@/lib/church";
 import { getMemberYearOfferings } from "@/lib/finance";
 import { encryptSensitive, normalizeRegNo } from "@/lib/crypto";
 import { STAFF_ROLES } from "@/lib/constants";
-import { str } from "@/lib/format";
+import { str, won } from "@/lib/format";
+import { notifyMember, notifyRoles } from "@/lib/push";
 
 /** 연도별 일련번호. 예: 2026-0001 */
 async function nextReceiptNo(churchId: string, year: number): Promise<string> {
@@ -122,6 +123,23 @@ export async function requestReceipt(formData: FormData) {
     userId: user.id,
   });
 
+  // 자동발급이면 성도에게, 아니면 처리할 회계 담당자에게 알린다.
+  if (autoIssue) {
+    await notifyMember(member.id, {
+      title: "기부금영수증이 발급되었습니다",
+      body: `${year}년 귀속 · ${won(deductibleTotal)}. 눌러서 확인하고 인쇄하세요.`,
+      url: `/my/receipts/${receipt.id}`,
+      tag: `receipt-${receipt.id}`,
+    });
+  } else {
+    await notifyRoles(member.churchId, ["ADMIN", "FINANCE"], {
+      title: "기부금영수증 신청이 들어왔습니다",
+      body: `${member.name} 성도 · ${year}년 귀속 ${won(deductibleTotal)}`,
+      url: "/receipts",
+      tag: "receipt-request",
+    });
+  }
+
   revalidatePath("/my/receipts");
   revalidatePath("/receipts");
 
@@ -194,6 +212,13 @@ export async function issueReceipt(id: string) {
     userId: staff.id,
   });
 
+  await notifyMember(receipt.memberId, {
+    title: "기부금영수증이 발급되었습니다",
+    body: `${receipt.year}년 귀속 · ${won(total)}. 눌러서 확인하고 인쇄하세요.`,
+    url: `/my/receipts/${receipt.id}`,
+    tag: `receipt-${receipt.id}`,
+  });
+
   revalidatePath("/receipts");
   revalidatePath("/my/receipts");
   redirect(`/receipts/${id}?ok=issued`);
@@ -218,6 +243,13 @@ export async function rejectReceipt(id: string, formData: FormData) {
     entityId: id,
     summary: `${receipt.year}년 기부금영수증 반려: ${receipt.donorName}`,
     userId: staff.id,
+  });
+
+  await notifyMember(receipt.memberId, {
+    title: "기부금영수증 신청이 반려되었습니다",
+    body: reason ?? "교회 사무실에 문의해 주세요.",
+    url: "/my/receipts",
+    tag: `receipt-${id}`,
   });
 
   revalidatePath("/receipts");

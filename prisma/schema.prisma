@@ -83,6 +83,8 @@ model User {
   approvedUsers User[]   @relation("Approver")
   rejectReason String?
 
+  pushSubscriptions PushSubscription[]
+
   offeringsCreated Offering[]        @relation("OfferingCreator")
   expensesCreated  Expense[]         @relation("ExpenseCreator")
   receiptsIssued   DonationReceipt[] @relation("ReceiptIssuer")
@@ -388,6 +390,27 @@ model HistoryPhoto {
 
   @@index([eventId])
   @@index([churchId])
+}
+
+// ─────────────────────────────────────────────
+// 푸시 알림 구독
+// 브라우저(또는 홈 화면에 추가한 앱) 하나가 구독 하나에 해당한다.
+// ─────────────────────────────────────────────
+
+model PushSubscription {
+  id       String @id @default(cuid())
+  endpoint String @unique
+  p256dh   String
+  auth     String
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  label     String? // 어떤 기기인지 알아보기 위한 메모
+  createdAt DateTime @default(now())
+  lastUsedAt DateTime?
+
+  @@index([userId])
 }
 
 // ─────────────────────────────────────────────

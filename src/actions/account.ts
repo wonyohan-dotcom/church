@@ -7,6 +7,7 @@ import { createSession, hashPassword, requireAdmin } from "@/lib/auth";
 import { logAudit } from "@/lib/church";
 import { DEFAULT_ACCOUNTS, type Role } from "@/lib/constants";
 import { str } from "@/lib/format";
+import { notifyRoles, notifyUser } from "@/lib/push";
 
 /* ── 교회 등록 ───────────────────────────── */
 
@@ -144,6 +145,13 @@ export async function signup(
     userId: user.id,
   });
 
+  await notifyRoles(church.id, ["ADMIN"], {
+    title: "새 가입 신청이 있습니다",
+    body: `${user.name}님이 가입을 신청했습니다. 권한을 정해 승인해 주세요.`,
+    url: "/settings",
+    tag: "signup-request",
+  });
+
   await createSession({
     id: user.id,
     loginId: user.loginId,
@@ -231,6 +239,13 @@ export async function approveUser(userId: string, formData: FormData) {
     entityId: userId,
     summary: `가입 승인: ${target.name} → ${role}`,
     userId: admin.id,
+  });
+
+  await notifyUser(userId, {
+    title: "가입이 승인되었습니다",
+    body: `${admin.churchName}에서 가입을 승인했습니다. 이제 이용하실 수 있습니다.`,
+    url: role === "MEMBER" ? "/my" : "/dashboard",
+    tag: "signup-approved",
   });
 
   revalidatePath("/settings");
