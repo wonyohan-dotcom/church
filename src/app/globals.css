@@ -1,0 +1,392 @@
+@import "tailwindcss";
+
+/* ─────────────────────────────────────────────
+   차분한 모던 — 깊은 남색 + 따뜻한 종이 톤
+   모든 색은 CSS 변수로 정의하고 다크모드에서 값만 교체한다.
+   ───────────────────────────────────────────── */
+
+:root {
+  --bg: #f6f5f2;
+  --surface: #ffffff;
+  --surface-2: #f0eee9;
+  --surface-3: #e7e4dd;
+  --border: #e2ded5;
+  --border-strong: #cfcabd;
+
+  --ink: #1a1e29;
+  --ink-2: #4b5162;
+  --ink-3: #7c8296;
+
+  --primary: #22355c;
+  --primary-hover: #2c4271;
+  --primary-ink: #ffffff;
+  --primary-soft: #e8edf7;
+  --primary-soft-ink: #22355c;
+
+  --accent: #a97b4f;
+  --accent-soft: #f6efe6;
+
+  --income: #2b7a68;
+  --income-soft: #e4f2ee;
+  --expense: #b0553f;
+  --expense-soft: #fbeae5;
+  --warn: #9a7420;
+  --warn-soft: #fbf2dd;
+
+  /* 차트 전용 색. 색각이상 대비까지 검증한 값이라 임의로 바꾸지 않는다.
+     (OKLCH 명도대·채도 하한·CVD 분리도·대비 6개 검사 통과) */
+  --chart-income: #2f6fb5;
+  --chart-expense: #d1691f;
+  --chart-bar: #22355c;
+  --chart-grid: #e6e2da;
+  --chart-axis: #9aa0ae;
+
+  --ring: rgba(34, 53, 92, 0.32);
+  --shadow-sm: 0 1px 2px rgba(26, 30, 41, 0.05);
+  --shadow: 0 1px 3px rgba(26, 30, 41, 0.07), 0 8px 24px -12px rgba(26, 30, 41, 0.14);
+  --shadow-lg: 0 2px 6px rgba(26, 30, 41, 0.08), 0 24px 48px -20px rgba(26, 30, 41, 0.24);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #101219;
+    --surface: #181b24;
+    --surface-2: #1f2330;
+    --surface-3: #272c3b;
+    --border: #2b3040;
+    --border-strong: #3b4256;
+
+    --ink: #e9e7e2;
+    --ink-2: #b0b5c4;
+    --ink-3: #848b9e;
+
+    --primary: #8fabdc;
+    --primary-hover: #a3bce8;
+    --primary-ink: #101219;
+    --primary-soft: #232b3d;
+    --primary-soft-ink: #b9caea;
+
+    --accent: #d0a273;
+    --accent-soft: #2b2419;
+
+    --income: #6bc0aa;
+    --income-soft: #17302b;
+    --expense: #e08a70;
+    --expense-soft: #33201a;
+    --warn: #d8b263;
+    --warn-soft: #2e2716;
+
+    --chart-income: #4f8ed2;
+    --chart-expense: #cc7538;
+    --chart-bar: #8fabdc;
+    --chart-grid: #2b3040;
+    --chart-axis: #767d90;
+
+    --ring: rgba(143, 171, 220, 0.36);
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --shadow: 0 1px 3px rgba(0, 0, 0, 0.45), 0 8px 24px -12px rgba(0, 0, 0, 0.6);
+    --shadow-lg: 0 2px 6px rgba(0, 0, 0, 0.5), 0 24px 48px -20px rgba(0, 0, 0, 0.7);
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg: #101219;
+  --surface: #181b24;
+  --surface-2: #1f2330;
+  --surface-3: #272c3b;
+  --border: #2b3040;
+  --border-strong: #3b4256;
+
+  --ink: #e9e7e2;
+  --ink-2: #b0b5c4;
+  --ink-3: #848b9e;
+
+  --primary: #8fabdc;
+  --primary-hover: #a3bce8;
+  --primary-ink: #101219;
+  --primary-soft: #232b3d;
+  --primary-soft-ink: #b9caea;
+
+  --accent: #d0a273;
+  --accent-soft: #2b2419;
+
+  --income: #6bc0aa;
+  --income-soft: #17302b;
+  --expense: #e08a70;
+  --expense-soft: #33201a;
+  --warn: #d8b263;
+  --warn-soft: #2e2716;
+
+  --chart-income: #4f8ed2;
+  --chart-expense: #cc7538;
+  --chart-bar: #8fabdc;
+  --chart-grid: #2b3040;
+  --chart-axis: #767d90;
+
+  --ring: rgba(143, 171, 220, 0.36);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow: 0 1px 3px rgba(0, 0, 0, 0.45), 0 8px 24px -12px rgba(0, 0, 0, 0.6);
+  --shadow-lg: 0 2px 6px rgba(0, 0, 0, 0.5), 0 24px 48px -20px rgba(0, 0, 0, 0.7);
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-line: var(--border);
+  --color-line-strong: var(--border-strong);
+
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-ink: var(--primary-ink);
+  --color-primary-soft: var(--primary-soft);
+  --color-primary-soft-ink: var(--primary-soft-ink);
+
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+
+  --color-income: var(--income);
+  --color-income-soft: var(--income-soft);
+  --color-expense: var(--expense);
+  --color-expense-soft: var(--expense-soft);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+
+  --color-chart-income: var(--chart-income);
+  --color-chart-expense: var(--chart-expense);
+  --color-chart-bar: var(--chart-bar);
+
+  --font-sans: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont,
+    "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", system-ui, sans-serif;
+}
+
+* {
+  border-color: var(--border);
+}
+
+html {
+  color-scheme: light dark;
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior-y: none;
+}
+
+/* 금액·날짜는 자릿수가 흔들리지 않도록 고정폭 숫자 */
+.tnum {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+/* ── 재사용 클래스 ─────────────────────────── */
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: var(--shadow-sm);
+}
+
+.field {
+  width: 100%;
+  border-radius: 10px;
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  color: var(--ink);
+  padding: 0.6rem 0.75rem;
+  font-size: 0.95rem;
+  line-height: 1.4;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.field::placeholder {
+  color: var(--ink-3);
+}
+.field:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--ring);
+}
+.field:disabled {
+  background: var(--surface-2);
+  color: var(--ink-3);
+}
+select.field {
+  appearance: none;
+  background-image: linear-gradient(45deg, transparent 50%, var(--ink-3) 50%),
+    linear-gradient(135deg, var(--ink-3) 50%, transparent 50%);
+  background-position: calc(100% - 18px) calc(50% + 1px), calc(100% - 13px) calc(50% + 1px);
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+  padding-right: 2.25rem;
+}
+textarea.field {
+  resize: vertical;
+  min-height: 5rem;
+}
+
+.label {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--ink-2);
+  margin-bottom: 0.35rem;
+  letter-spacing: -0.01em;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  border-radius: 10px;
+  padding: 0.6rem 1rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  line-height: 1.2;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: background-color 0.15s, border-color 0.15s, opacity 0.15s;
+  white-space: nowrap;
+}
+.btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.btn-primary {
+  background: var(--primary);
+  color: var(--primary-ink);
+}
+.btn-primary:hover:not(:disabled) {
+  background: var(--primary-hover);
+}
+.btn-ghost {
+  background: var(--surface);
+  border-color: var(--border-strong);
+  color: var(--ink);
+}
+.btn-ghost:hover:not(:disabled) {
+  background: var(--surface-2);
+}
+.btn-quiet {
+  background: transparent;
+  color: var(--ink-2);
+}
+.btn-quiet:hover:not(:disabled) {
+  background: var(--surface-2);
+  color: var(--ink);
+}
+.btn-danger {
+  background: transparent;
+  border-color: var(--border-strong);
+  color: var(--expense);
+}
+.btn-danger:hover:not(:disabled) {
+  background: var(--expense-soft);
+}
+.btn-sm {
+  padding: 0.4rem 0.7rem;
+  font-size: 0.82rem;
+  border-radius: 8px;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  border-radius: 999px;
+  padding: 0.15rem 0.55rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+
+/* 표 */
+.table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 0.9rem;
+}
+.table th {
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.78rem;
+  letter-spacing: 0.02em;
+  color: var(--ink-3);
+  padding: 0.6rem 0.75rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-2);
+  white-space: nowrap;
+}
+.table th:first-child {
+  border-top-left-radius: 12px;
+}
+.table th:last-child {
+  border-top-right-radius: 12px;
+}
+.table td {
+  padding: 0.7rem 0.75rem;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+.table tbody tr:last-child td {
+  border-bottom: none;
+}
+.table tbody tr:hover td {
+  background: var(--surface-2);
+}
+
+/* 스크롤바 */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 999px;
+  border: 3px solid var(--bg);
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* 인쇄 — 기부금영수증 출력용 */
+@media print {
+  :root {
+    --bg: #ffffff;
+    --surface: #ffffff;
+    --surface-2: #ffffff;
+    --ink: #000000;
+    --ink-2: #000000;
+    --border: #999999;
+    --border-strong: #666666;
+  }
+  body {
+    background: #fff;
+  }
+  .no-print {
+    display: none !important;
+  }
+  .print-page {
+    box-shadow: none !important;
+    border: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    max-width: none !important;
+  }
+  @page {
+    size: A4;
+    margin: 14mm;
+  }
+}

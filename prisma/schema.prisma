@@ -1,0 +1,327 @@
+// 교회 통합 관리 시스템 — 데이터 모델
+// 교적 · 회계 · 기부금영수증 · 교회역사
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+// ─────────────────────────────────────────────
+// 사용자 · 권한
+// role: ADMIN(관리자) | FINANCE(회계) | PASTOR(교역자) | MEMBER(성도)
+// ─────────────────────────────────────────────
+
+model User {
+  id          String    @id @default(cuid())
+  loginId     String    @unique
+  password    String
+  name        String
+  role        String    @default("MEMBER")
+  active      Boolean   @default(true)
+  mustChangePw Boolean  @default(false)
+  lastLoginAt DateTime?
+
+  memberId String? @unique
+  member   Member? @relation("MemberAccount", fields: [memberId], references: [id], onDelete: SetNull)
+
+  offeringsCreated Offering[]        @relation("OfferingCreator")
+  expensesCreated  Expense[]         @relation("ExpenseCreator")
+  receiptsIssued   DonationReceipt[] @relation("ReceiptIssuer")
+  auditLogs        AuditLog[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ─────────────────────────────────────────────
+// 교적 (교구 · 가정 · 교인)
+// ─────────────────────────────────────────────
+
+model District {
+  id         String  @id @default(cuid())
+  name       String  @unique
+  leaderName String?
+  sortOrder  Int     @default(0)
+
+  households Household[]
+  members    Member[]
+
+  createdAt DateTime @default(now())
+}
+
+model Household {
+  id            String  @id @default(cuid())
+  name          String
+  postalCode    String?
+  address       String?
+  addressDetail String?
+  phone         String?
+  note          String?
+
+  districtId String?
+  district   District? @relation(fields: [districtId], references: [id], onDelete: SetNull)
+
+  members Member[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Member {
+  id        String  @id @default(cuid())
+  code      String  @unique // 교적번호
+  name      String
+  nameHanja String?
+  photoUrl  String?
+  gender    String? // M | F
+
+  birthDate    DateTime?
+  birthIsLunar Boolean   @default(false)
+
+  phone         String?
+  email         String?
+  postalCode    String?
+  address       String?
+  addressDetail String?
+
+  householdId  String?
+  household    Household? @relation(fields: [householdId], references: [id], onDelete: SetNull)
+  householdRel String? // 세대주와의 관계: 본인/배우자/자녀/부모/형제
+
+  districtId String?
+  district   District? @relation(fields: [districtId], references: [id], onDelete: SetNull)
+
+  position String? // 목사/전도사/장로/권사/안수집사/서리집사/성도
+  status   String  @default("ACTIVE") // ACTIVE 재적 | INACTIVE 장기결석 | TRANSFERRED 이명 | DECEASED 소천
+
+  registeredAt  DateTime? // 등록일
+  catechumenAt  DateTime? // 학습
+  baptizedAt    DateTime? // 세례
+  confirmedAt   DateTime? // 입교
+  transferredAt DateTime?
+  transferTo    String?
+  deceasedAt    DateTime?
+
+  job            String?
+  previousChurch String?
+  note           String?
+
+  offerings Offering[]
+  receipts  DonationReceipt[]
+  user      User?             @relation("MemberAccount")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([name])
+  @@index([status])
+  @@index([householdId])
+}
+
+// ─────────────────────────────────────────────
+// 회계 (계정과목 · 헌금 · 지출 · 예산)
+// ─────────────────────────────────────────────
+
+model Account {
+  id   String @id @default(cuid())
+  code String @unique
+  name String
+  type String // INCOME | EXPENSE
+
+  category   String? // 대분류 (예: 경상비, 사역비)
+  isOffering Boolean @default(false) // 헌금 항목 여부
+  deductible Boolean @default(true) // 기부금영수증 공제대상 여부
+  sortOrder  Int     @default(0)
+  active     Boolean @default(true)
+
+  offerings Offering[]
+  expenses  Expense[]
+  budgets   Budget[]
+
+  createdAt DateTime @default(now())
+}
+
+model Offering {
+  id     String   @id @default(cuid())
+  date   DateTime
+  amount Int
+
+  accountId String
+  account   Account @relation(fields: [accountId], references: [id])
+
+  memberId  String?
+  member    Member? @relation(fields: [memberId], references: [id], onDelete: SetNull)
+  donorName String? // 미등록 헌금자 이름
+
+  method String  @default("CASH") // CASH 현금 | TRANSFER 계좌이체 | CARD 카드
+  note   String?
+
+  createdById String?
+  createdBy   User?   @relation("OfferingCreator", fields: [createdById], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([date])
+  @@index([memberId])
+  @@index([accountId])
+}
+
+model Expense {
+  id     String   @id @default(cuid())
+  date   DateTime
+  amount Int
+
+  accountId String
+  account   Account @relation(fields: [accountId], references: [id])
+
+  payee       String? // 지급처
+  method      String  @default("TRANSFER")
+  description String?
+  receiptUrl  String? // 영수증 사진
+  note        String?
+
+  createdById String?
+  createdBy   User?   @relation("ExpenseCreator", fields: [createdById], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([date])
+  @@index([accountId])
+}
+
+model Budget {
+  id     String @id @default(cuid())
+  year   Int
+  amount Int
+
+  accountId String
+  account   Account @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@unique([year, accountId])
+}
+
+// ─────────────────────────────────────────────
+// 기부금영수증 (성도 온라인 신청 · 발급)
+// status: REQUESTED 신청 | ISSUED 발급완료 | REJECTED 반려 | CANCELED 취소
+// ─────────────────────────────────────────────
+
+model DonationReceipt {
+  id        String @id @default(cuid())
+  receiptNo String @unique
+  year      Int
+
+  memberId String
+  member   Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  // 신청 시점 기부자 정보 스냅샷 (주민등록번호는 암호화 저장)
+  donorName    String
+  donorRegNoEnc String?
+  donorAddress String?
+  donorPhone   String?
+
+  totalAmount Int    @default(0)
+  status      String @default("REQUESTED")
+
+  requestedAt  DateTime  @default(now())
+  issuedAt     DateTime?
+  issuedById   String?
+  issuedBy     User?     @relation("ReceiptIssuer", fields: [issuedById], references: [id], onDelete: SetNull)
+  rejectReason String?
+  note         String?
+
+  items DonationReceiptItem[]
+
+  @@unique([memberId, year])
+  @@index([status])
+  @@index([year])
+}
+
+model DonationReceiptItem {
+  id String @id @default(cuid())
+
+  receiptId String
+  receipt   DonationReceipt @relation(fields: [receiptId], references: [id], onDelete: Cascade)
+
+  accountName String
+  donationCode String @default("41") // 41: 종교단체 기부금
+  amount      Int
+  count       Int    @default(0)
+}
+
+// ─────────────────────────────────────────────
+// 교회 역사
+// ─────────────────────────────────────────────
+
+model HistoryEvent {
+  id           String   @id @default(cuid())
+  date         DateTime
+  dateIsApprox Boolean  @default(false)
+  title        String
+  category     String   @default("GENERAL") // FOUNDING | BUILDING | ORDINATION | MISSION | EVENT | PASTOR | GENERAL
+  content      String?
+  pinned       Boolean  @default(false)
+
+  photos HistoryPhoto[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([date])
+  @@index([category])
+}
+
+model HistoryPhoto {
+  id      String  @id @default(cuid())
+  url     String
+  caption String?
+  takenAt DateTime?
+  sortOrder Int   @default(0)
+
+  eventId String?
+  event   HistoryEvent? @relation(fields: [eventId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+
+  @@index([eventId])
+}
+
+// ─────────────────────────────────────────────
+// 교회 기본 정보 · 감사 로그
+// ─────────────────────────────────────────────
+
+model ChurchSetting {
+  id             String  @id @default("singleton")
+  name           String  @default("우리교회")
+  regNo          String? // 고유번호 / 사업자등록번호
+  representative String?
+  postalCode     String?
+  address        String?
+  phone          String?
+  logoUrl        String?
+  sealUrl        String? // 직인 이미지
+  receiptAutoIssue Boolean @default(true) // 신청 즉시 자동 발급
+
+  updatedAt DateTime @updatedAt
+}
+
+model AuditLog {
+  id       String   @id @default(cuid())
+  action   String // CREATE | UPDATE | DELETE | ISSUE ...
+  entity   String // Offering | Expense | Member ...
+  entityId String?
+  summary  String?
+
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([entity])
+}
