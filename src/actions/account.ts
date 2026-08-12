@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { createSession, hashPassword, requireAdmin } from "@/lib/auth";
 import { logAudit } from "@/lib/church";
-import { DEFAULT_ACCOUNTS, type Role } from "@/lib/constants";
+import { DEFAULT_ACCOUNTS, ROLES, type Role } from "@/lib/constants";
 import { str } from "@/lib/format";
 import { notifyRoles, notifyUser } from "@/lib/push";
 
@@ -237,7 +237,7 @@ export async function approveUser(userId: string, formData: FormData) {
     action: "APPROVE",
     entity: "User",
     entityId: userId,
-    summary: `가입 승인: ${target.name} → ${role}`,
+    summary: `가입 승인: ${target.name} → ${ROLES[role]}`,
     userId: admin.id,
   });
 
