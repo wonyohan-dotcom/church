@@ -101,6 +101,8 @@ export function MonthlyIncomeExpenseChart({ data }: { data: MonthlyPoint[] }) {
               fill="var(--chart-income)"
               radius={[4, 4, 0, 0]}
               maxBarSize={22}
+              // 마우스를 올릴 때마다 막대가 0에서 다시 자라나 깜빡이므로 끈다.
+              isAnimationActive={false}
             />
             <Bar
               dataKey="expense"
@@ -108,6 +110,8 @@ export function MonthlyIncomeExpenseChart({ data }: { data: MonthlyPoint[] }) {
               fill="var(--chart-expense)"
               radius={[4, 4, 0, 0]}
               maxBarSize={22}
+              // 마우스를 올릴 때마다 막대가 0에서 다시 자라나 깜빡이므로 끈다.
+              isAnimationActive={false}
             />
           </BarChart>
         </ResponsiveContainer>

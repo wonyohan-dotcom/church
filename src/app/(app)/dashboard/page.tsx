@@ -31,22 +31,39 @@ export default async function DashboardPage({
   const year = now.getFullYear();
   const month = now.getMonth() + 1;
 
-  const [church, summary, memberCount, monthIncome, monthExpense, pendingReceipts, recentHistory] =
-    await Promise.all([
-      getChurch(),
-      getYearSummary(year),
-      prisma.member.count({ where: { status: "ACTIVE" } }),
-      prisma.offering.aggregate({
-        where: { date: monthRange(year, month) },
-        _sum: { amount: true },
-      }),
-      prisma.expense.aggregate({
-        where: { date: monthRange(year, month) },
-        _sum: { amount: true },
-      }),
-      prisma.donationReceipt.count({ where: { status: "REQUESTED" } }),
-      prisma.historyEvent.findMany({ orderBy: { date: "desc" }, take: 4 }),
-    ]);
+  const [
+    church,
+    summary,
+    memberCount,
+    monthIncome,
+    monthExpense,
+    totalIncome,
+    totalExpense,
+    pendingReceipts,
+    recentHistory,
+  ] = await Promise.all([
+    getChurch(),
+    getYearSummary(year),
+    prisma.member.count({ where: { status: "ACTIVE" } }),
+    prisma.offering.aggregate({
+      where: { date: monthRange(year, month) },
+      _sum: { amount: true },
+    }),
+    prisma.expense.aggregate({
+      where: { date: monthRange(year, month) },
+      _sum: { amount: true },
+    }),
+    // 기간을 걸지 않은 전체 합계 — 지금 교회에 남아 있는 잔액을 구하기 위한 값
+    prisma.offering.aggregate({ _sum: { amount: true } }),
+    prisma.expense.aggregate({ _sum: { amount: true } }),
+    prisma.donationReceipt.count({ where: { status: "REQUESTED" } }),
+    prisma.historyEvent.findMany({ orderBy: { date: "desc" }, take: 4 }),
+  ]);
+
+  const totalIncomeSum = totalIncome._sum.amount ?? 0;
+  const totalExpenseSum = totalExpense._sum.amount ?? 0;
+  /** 지금까지 들어온 돈에서 나간 돈을 뺀, 현재 교회에 남아 있는 잔액 */
+  const currentBalance = totalIncomeSum - totalExpenseSum;
 
   // 이번 달 생일자 — 저장된 생년월일에서 월만 비교한다.
   const activeMembers = await prisma.member.findMany({
@@ -58,7 +75,7 @@ export default async function DashboardPage({
     .sort((a, b) => (a.birthDate!.getDate() ?? 0) - (b.birthDate!.getDate() ?? 0));
 
   const canEdit = canManageFinance(staff.role);
-  const monthBalance = (monthIncome._sum.amount ?? 0) - (monthExpense._sum.amount ?? 0);
+  const yearBalance = summary.totalIncome - summary.totalExpense;
 
   return (
     <>
@@ -74,6 +91,42 @@ export default async function DashboardPage({
           )
         }
       />
+
+      {/* 첫 화면에서 가장 먼저 눈에 들어와야 하는 숫자 — 지금 교회에 남아 있는 잔액 */}
+      <section className="mb-5 rounded-2xl bg-primary p-6 text-primary-ink shadow-[var(--shadow)] sm:p-7">
+        <div className="flex flex-wrap items-end justify-between gap-x-8 gap-y-5">
+          <div className="min-w-0">
+            <p className="text-[0.82rem] font-semibold opacity-75">현재 교회 잔액</p>
+            <p className="tnum mt-2 text-[2.4rem] font-bold leading-none tracking-[-0.03em] sm:text-[3rem]">
+              {won(currentBalance)}
+            </p>
+            <p className="tnum mt-3 text-[0.8rem] opacity-70">
+              누적 수입 {won(totalIncomeSum)} · 누적 지출 {won(totalExpenseSum)}
+            </p>
+          </div>
+
+          <div className="flex items-end gap-6 sm:gap-8">
+            <div>
+              <p className="text-[0.75rem] opacity-70">{month}월 수입</p>
+              <p className="tnum mt-1 text-lg font-bold leading-tight sm:text-xl">
+                +{won(monthIncome._sum.amount ?? 0)}
+              </p>
+            </div>
+            <div>
+              <p className="text-[0.75rem] opacity-70">{month}월 지출</p>
+              <p className="tnum mt-1 text-lg font-bold leading-tight sm:text-xl">
+                −{won(monthExpense._sum.amount ?? 0)}
+              </p>
+            </div>
+            <Link
+              href="/finance"
+              className="hidden shrink-0 rounded-lg border border-current/30 px-3 py-2 text-sm font-semibold opacity-90 transition-opacity hover:opacity-100 sm:inline-block"
+            >
+              회계 관리
+            </Link>
+          </div>
+        </div>
+      </section>
 
       {sp.error === "forbidden" && (
         <div className="mb-5">
@@ -100,20 +153,17 @@ export default async function DashboardPage({
           icon={<IconUsers width={18} height={18} />}
         />
         <StatCard
-          label={`${month}월 헌금`}
-          value={won(monthIncome._sum.amount ?? 0)}
+          label={`${year}년 헌금`}
+          value={won(summary.totalIncome)}
           tone="income"
           icon={<IconWallet width={18} height={18} />}
         />
+        <StatCard label={`${year}년 지출`} value={won(summary.totalExpense)} tone="expense" />
         <StatCard
-          label={`${month}월 지출`}
-          value={won(monthExpense._sum.amount ?? 0)}
-          tone="expense"
-        />
-        <StatCard
-          label={`${month}월 잔액`}
-          value={won(monthBalance)}
-          tone={monthBalance >= 0 ? "default" : "expense"}
+          label={`${year}년 잔액`}
+          value={won(yearBalance)}
+          sub={yearBalance >= 0 ? "올해 들어온 만큼 남음" : "올해는 지출이 더 많음"}
+          tone={yearBalance >= 0 ? "default" : "expense"}
         />
       </div>
 

@@ -45,8 +45,7 @@ next-env.d.ts
 # 로컬 데이터베이스 및 업로드 파일
 /*.db
 /*.db-journal
-/public/uploads/*
-!/public/uploads/.gitkeep
+/data/
 
 # 예시 환경변수는 커밋합니다
 !.env.example
