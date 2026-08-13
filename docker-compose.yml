@@ -4,24 +4,46 @@
 #   2. docker compose up -d
 #   3. 브라우저에서 http://서버주소:3000 접속
 #
-# 교회의 모든 자료(데이터베이스 + 사진)는 church-data 볼륨 한 곳에 모입니다.
-# 백업은 이 볼륨만 복사하면 됩니다.
+# Supabase 를 쓰신다면 아래 db 서비스를 지우고 DATABASE_URL 만 Supabase 주소로
+# 바꾸면 됩니다. 사진도 Supabase Storage 에 맡기려면 SUPABASE_* 세 값을 채우세요.
 
 services:
   church:
     build: .
-    # 직접 빌드하지 않고 미리 만든 이미지를 쓰려면 위 build 대신 image 를 지정하세요.
     restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
     ports:
       - "3000:3000"
     environment:
       # 반드시 바꿔 주세요. 잃어버리면 저장된 주민등록번호를 읽을 수 없습니다.
       APP_SECRET: "여기에-openssl-rand-hex-32-결과를-붙여넣으세요"
-      DATABASE_URL: "file:/data/church.db"
-      UPLOAD_DIR: "/data/uploads"
+      DATABASE_URL: "postgresql://postgres:changeme@db:5432/church?schema=public"
+      TZ: "Asia/Seoul"
+      # Supabase Storage 를 쓰려면 아래 주석을 풀고 채우세요.
+      # SUPABASE_URL: "https://xxxx.supabase.co"
+      # SUPABASE_SERVICE_ROLE_KEY: "..."
+      # SUPABASE_BUCKET: "church-uploads"
+    volumes:
+      # Supabase Storage 를 쓰지 않을 때 사진이 쌓이는 곳
+      - church-uploads:/data
+
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_PASSWORD: "changeme"
+      POSTGRES_DB: church
       TZ: "Asia/Seoul"
     volumes:
-      - church-data:/data
+      - church-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
 volumes:
-  church-data:
+  church-db:
+  church-uploads:

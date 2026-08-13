@@ -16,6 +16,11 @@ if [ -z "$APP_SECRET" ] || [ ${#APP_SECRET} -lt 16 ]; then
   exit 1
 fi
 
+if [ -z "$DATABASE_URL" ]; then
+  echo "DATABASE_URL 환경변수를 설정해 주세요. (PostgreSQL 연결 주소)"
+  exit 1
+fi
+
 mkdir -p "${UPLOAD_DIR:-/data/uploads}"
 
 # 새 버전에 스키마 변경이 있으면 여기서 반영된다. 이미 최신이면 아무 일도 하지 않는다.

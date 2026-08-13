@@ -1,4 +1,4 @@
-import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
+import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@/generated/prisma/client";
 
 const globalForPrisma = globalThis as unknown as {
@@ -6,9 +6,20 @@ const globalForPrisma = globalThis as unknown as {
 };
 
 function createClient() {
-  const adapter = new PrismaBetterSqlite3({
-    url: process.env.DATABASE_URL ?? "file:./dev.db",
+  const connectionString = process.env.DATABASE_URL;
+  if (!connectionString) {
+    throw new Error(
+      "DATABASE_URL 환경변수가 없습니다. .env 파일에 PostgreSQL 연결 주소를 넣어 주세요.",
+    );
+  }
+
+  // Supabase 는 연결 수가 제한되어 있어 풀 크기를 작게 잡는다.
+  // 서버리스(Vercel)에서는 인스턴스가 여러 개 뜨므로 더욱 중요하다.
+  const adapter = new PrismaPg({
+    connectionString,
+    max: Number(process.env.DATABASE_POOL_MAX ?? 5),
   });
+
   return new PrismaClient({ adapter });
 }
 

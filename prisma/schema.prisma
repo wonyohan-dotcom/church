@@ -3,6 +3,9 @@
 //
 // 여러 교회가 한 서버를 함께 씁니다. 교회별 자료는 churchId 로 완전히 분리되며,
 // 모든 조회는 로그인한 사람이 속한 교회로 범위가 제한됩니다.
+//
+// 데이터베이스는 PostgreSQL 입니다. Supabase, Neon 같은 관리형 서비스나
+// 직접 띄운 Postgres 모두 DATABASE_URL 만 바꾸면 그대로 동작합니다.
 
 generator client {
   provider = "prisma-client"
@@ -10,7 +13,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
 }
 
 // ─────────────────────────────────────────────

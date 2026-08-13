@@ -1,14 +1,21 @@
 import { readFile, stat } from "fs/promises";
 import path from "path";
+import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
-import { resolveUploadPath } from "@/lib/upload";
+import { resolveUploadPath, uploadKeyFrom } from "@/lib/upload";
+import {
+  SIGNED_URL_TTL,
+  STORAGE_BUCKET,
+  supabase,
+  supabaseConfigured,
+} from "@/lib/storage";
 
 /**
  * 업로드된 이미지(교인 사진 · 영수증 · 연혁 사진 · 직인)를 내보낸다.
  *
- * public/ 폴더는 빌드 시점에 내용이 고정되기 때문에 운영 중 올라온 파일을 서빙하지 못한다.
- * 그래서 파일은 public/ 밖에 저장하고 이 경로로 읽어 보낸다.
  * 교인 사진과 영수증은 민감한 자료이므로 로그인한 사람에게만 내보낸다.
+ * Supabase Storage 를 쓸 때는 버킷을 비공개로 두고, 여기서 짧게 유효한
+ * 서명 주소를 만들어 그쪽으로 넘긴다. 주소를 알아도 곧 만료된다.
  */
 
 const CONTENT_TYPES: Record<string, string> = {
@@ -31,15 +38,30 @@ export async function GET(
   }
 
   const { path: segments } = await params;
-  const filePath = resolveUploadPath(`/uploads/${segments.join("/")}`);
-  if (!filePath) {
+  const webPath = `/uploads/${segments.join("/")}`;
+  const key = uploadKeyFrom(webPath);
+  if (!key) {
     return new Response("잘못된 경로입니다.", { status: 400 });
   }
 
-  const contentType = CONTENT_TYPES[path.extname(filePath).toLowerCase()];
+  const contentType = CONTENT_TYPES[path.extname(key).toLowerCase()];
   if (!contentType) {
     return new Response("지원하지 않는 형식입니다.", { status: 400 });
   }
+
+  if (supabaseConfigured()) {
+    const { data, error } = await supabase()
+      .storage.from(STORAGE_BUCKET)
+      .createSignedUrl(key, SIGNED_URL_TTL);
+
+    if (error || !data?.signedUrl) {
+      return new Response("찾을 수 없습니다.", { status: 404 });
+    }
+    return NextResponse.redirect(data.signedUrl, { status: 307 });
+  }
+
+  const filePath = resolveUploadPath(webPath);
+  if (!filePath) return new Response("잘못된 경로입니다.", { status: 400 });
 
   try {
     const info = await stat(filePath);

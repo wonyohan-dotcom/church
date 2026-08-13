@@ -60,28 +60,42 @@ PC 브라우저에서 관리하고, 휴대폰에서도 그대로 사용할 수 �
 npm install
 ```
 
-### 3. 환경 변수 설정
+### 3. 데이터베이스 준비
 
-`.env.example`을 `.env`로 복사한 뒤 `APP_SECRET`을 채웁니다.
+PostgreSQL이 필요합니다. Docker가 있으면 한 줄로 띄울 수 있습니다.
+
+```bash
+docker compose up -d db
+```
+
+Supabase를 쓰신다면 이 단계를 건너뛰고 연결 주소만 받아 오시면 됩니다.
+→ [docs/Supabase로-배포하기.md](docs/Supabase로-배포하기.md)
+
+### 4. 환경 변수 설정
+
+`.env.example`을 `.env`로 복사한 뒤 두 값을 채웁니다.
 
 ```bash
 cp .env.example .env
-node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+openssl rand -hex 32     # 출력값을 APP_SECRET 에 붙여넣기
 ```
 
-출력된 문자열을 `.env`의 `APP_SECRET`에 붙여 넣으세요.
+```bash
+DATABASE_URL="postgresql://postgres:changeme@localhost:5432/church?schema=public"
+APP_SECRET="위에서 만든 값"
+```
 
 > **중요** `APP_SECRET`은 로그인 세션 서명과 주민등록번호 암호화에 함께 쓰입니다.
 > 이 값을 바꾸면 기존에 저장된 주민등록번호를 읽을 수 없게 되니, 한번 정하면 바꾸지 마시고
 > 안전한 곳에 따로 보관해 주세요.
 
-### 4. 데이터베이스 만들기
+### 5. 표 만들기
 
 ```bash
 npm run db:migrate
 ```
 
-### 5. 실행
+### 6. 실행
 
 ```bash
 npm run dev
@@ -140,8 +154,11 @@ npm run db:seed
 
 ## 서버에 올려서 여러 사람이 쓰기
 
+> **Supabase를 이미 쓰고 계신다면** → [docs/Supabase로-배포하기.md](docs/Supabase로-배포하기.md)
+> Supabase + Vercel 조합이면 서버 비용 없이 올릴 수 있습니다.
+>
 > **핸드폰에서 앱처럼 쓰고 싶다면** → [docs/핸드폰에서-사용하기.md](docs/핸드폰에서-사용하기.md)
-> 서버 올리는 방법부터 홈 화면에 추가하는 법, 성도님께 보낼 안내문까지 정리되어 있습니다.
+> 홈 화면에 추가하는 법과 성도님께 보낼 안내문이 정리되어 있습니다.
 
 ### Docker (권장)
 
@@ -162,26 +179,17 @@ npm start
 
 기본적으로 3000번 포트로 실행됩니다.
 
-이 앱은 **데이터베이스 파일(SQLite)과 업로드된 사진을 서버의 디스크에 저장**합니다.
-업로드된 사진은 `data/uploads/`에 쌓이고, 로그인한 사용자에게만 `/uploads/...` 경로로 제공됩니다.
-저장 위치는 `UPLOAD_DIR` 환경변수로 바꿀 수 있습니다.
-따라서 파일 시스템을 쓸 수 있는 환경(교회 사무실 PC, NAS, 일반 VPS, Docker 등)에 올려야 합니다.
-Vercel처럼 디스크에 파일을 쓸 수 없는 서버리스 환경에 올리려면 데이터베이스를
-PostgreSQL로, 사진 저장소를 S3 같은 외부 저장소로 바꿔야 합니다.
+사진은 **Supabase Storage 설정이 있으면 그쪽에**, 없으면 서버 디스크(`data/uploads/`)에
+저장됩니다. 어느 쪽이든 로그인한 사용자에게만 `/uploads/...` 경로로 제공됩니다.
+Supabase Storage를 쓰면 디스크가 필요 없어 Vercel 같은 서버리스 환경에도 올릴 수 있습니다.
 
 ### 꼭 지켜 주세요
 
-- **정기 백업**: `dev.db` 파일과 `data/uploads` 폴더를 주기적으로 복사해 두세요.
-  이 둘만 있으면 언제든 복구할 수 있습니다.
+- **정기 백업**: 데이터베이스와 사진 저장소를 주기적으로 백업하세요.
+  Supabase를 쓰면 대시보드에서, 직접 띄운 Postgres라면 `pg_dump`로 받으시면 됩니다.
 - **HTTPS 사용**: 주민등록번호를 다루므로 반드시 HTTPS로 서비스하세요.
   (Caddy, Nginx + Let's Encrypt, Cloudflare Tunnel 등)
 - **APP_SECRET 보관**: 위에서 설명한 대로 잃어버리면 안 됩니다.
-
-### 데이터베이스를 PostgreSQL로 바꾸려면
-
-`prisma/schema.prisma`의 `provider`를 `postgresql`로, `src/lib/prisma.ts`의 어댑터를
-`@prisma/adapter-pg`로 바꾸고 `DATABASE_URL`만 교체하면 됩니다.
-나머지 코드는 그대로 동작합니다.
 
 ---
 
@@ -207,10 +215,12 @@ PostgreSQL로, 사진 저장소를 S3 같은 외부 저장소로 바꿔야 합�
 | ----------- | ------------------------------------------------ |
 | 프레임워크  | Next.js 16 (App Router, Server Actions)          |
 | 언어        | TypeScript                                       |
-| 데이터베이스 | Prisma 7 + SQLite (better-sqlite3 어댑터)        |
+| 데이터베이스 | Prisma 7 + PostgreSQL (Supabase · Neon · 자체 호스팅) |
 | 스타일      | Tailwind CSS 4 + CSS 변수 기반 테마              |
 | 인증        | JWT 세션 쿠키(jose) + bcrypt                     |
 | 그래프      | Recharts                                         |
+| 사진 저장   | Supabase Storage 또는 서버 디스크                |
+| 알림        | 웹푸시 (VAPID)                                   |
 
 ### 폴더 구조
 
@@ -225,7 +235,7 @@ src/
     my/                성도용 화면 (헌금 내역·영수증 신청)
     login, setup       로그인 · 최초 설정
   components/          공통 UI, 차트, 영수증 서식
-  lib/                 DB, 인증, 암호화, 회계 집계, 날짜·금액 형식
+  lib/                 DB, 인증, 암호화, 회계 집계, 사진 저장, 알림
   proxy.ts             경로 접근 권한 제어
 ```
 
