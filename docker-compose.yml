@@ -1,4 +1,4 @@
-# 교회 사무실 PC, NAS, 일반 서버에서 실행할 때 쓰는 설정입니다.
+# 심플한교회관리 — 교회 사무실 PC, NAS, 일반 서버에서 실행할 때 쓰는 설정입니다.
 #
 #   1. APP_SECRET 을 아래에 채웁니다 (openssl rand -hex 32)
 #   2. docker compose up -d

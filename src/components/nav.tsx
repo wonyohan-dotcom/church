@@ -2,9 +2,9 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { LogoMark } from "./logo";
 import {
   IconBook,
-  IconCross,
   IconHome,
   IconLogout,
   IconReceipt,
@@ -53,14 +53,12 @@ export function Sidebar({
   return (
     <aside className="no-print sticky top-0 hidden h-dvh w-60 shrink-0 flex-col border-r border-line bg-surface lg:flex">
       <div className="flex items-center gap-2.5 px-5 py-5">
-        <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-ink">
-          <IconCross width={18} height={18} />
-        </span>
+        <LogoMark size={36} decorative className="shrink-0" />
         <div className="min-w-0">
           <p className="truncate text-[0.95rem] font-bold leading-tight tracking-[-0.01em] text-ink">
             {churchName}
           </p>
-          <p className="text-[0.7rem] font-medium text-ink-3">통합 관리 시스템</p>
+          <p className="text-[0.7rem] font-medium text-ink-3">심플한교회관리</p>
         </div>
       </div>
 
@@ -117,9 +115,7 @@ export function MobileTopBar({ churchName }: { churchName: string }) {
   return (
     <header className="no-print sticky top-0 z-30 flex items-center justify-between gap-3 border-b border-line bg-surface/90 px-4 py-3 backdrop-blur lg:hidden">
       <Link href="/dashboard" className="flex min-w-0 items-center gap-2">
-        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-ink">
-          <IconCross width={16} height={16} />
-        </span>
+        <LogoMark size={32} decorative className="shrink-0" />
         <span className="truncate text-[0.95rem] font-bold tracking-[-0.01em] text-ink">
           {churchName}
         </span>

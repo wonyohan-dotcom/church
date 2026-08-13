@@ -1,25 +1,31 @@
-# 교회 통합 관리 시스템 — 배포용 이미지
+# 심플한교회관리 — 배포용 이미지
 #
 # 데이터베이스 파일과 업로드된 사진은 모두 /data 안에 모아 둔다.
 # 이 폴더 하나만 볼륨으로 붙이고 백업하면 교회의 모든 자료가 보존된다.
 
+# 사내망이나 미러 레지스트리를 쓰는 경우 베이스 이미지를 바꿀 수 있게 열어 둔다.
+#   docker build --build-arg NODE_IMAGE=mirror.gcr.io/library/node:22-slim .
+ARG NODE_IMAGE=node:22-slim
+
 # ── 1단계: 빌드 ─────────────────────────────
-FROM node:22-slim AS builder
+FROM ${NODE_IMAGE} AS builder
 
 WORKDIR /app
 
-# 네이티브 모듈(better-sqlite3)에 미리 컴파일된 바이너리가 없을 때를 대비한다.
-RUN apt-get update && apt-get install -y --no-install-recommends python3 make g++ \
-    && rm -rf /var/lib/apt/lists/*
-
 COPY package.json package-lock.json ./
+# better-sqlite3 는 리눅스용으로 미리 컴파일된 바이너리를 제공하므로
+# 컴파일 도구(python3/make/g++)를 따로 깔지 않아도 된다.
 RUN npm ci
 
 COPY . .
 RUN npx prisma generate && npm run build
 
+# 실행에 필요 없는 개발용 패키지를 걷어낸다.
+# 설치는 여기서 한 번만 하고, 실행 단계는 그 결과를 그대로 가져다 쓴다.
+RUN npm prune --omit=dev && npm cache clean --force
+
 # ── 2단계: 실행 ─────────────────────────────
-FROM node:22-slim AS runner
+FROM ${NODE_IMAGE} AS runner
 
 WORKDIR /app
 
@@ -30,19 +36,12 @@ ENV HOSTNAME=0.0.0.0
 ENV DATABASE_URL="file:/data/church.db"
 ENV UPLOAD_DIR="/data/uploads"
 
-RUN apt-get update && apt-get install -y --no-install-recommends python3 make g++ \
-    && rm -rf /var/lib/apt/lists/*
-
-COPY package.json package-lock.json ./
-RUN npm ci --omit=dev && npm cache clean --force \
-    && apt-get purge -y python3 make g++ && apt-get autoremove -y
-
+COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/src/generated ./src/generated
 COPY --from=builder /app/prisma ./prisma
-COPY next.config.ts prisma.config.ts ./
-COPY docker-entrypoint.sh ./
+COPY package.json next.config.ts prisma.config.ts docker-entrypoint.sh ./
 RUN chmod +x docker-entrypoint.sh && mkdir -p /data/uploads
 
 VOLUME ["/data"]

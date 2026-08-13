@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
-import { IconCross } from "@/components/icons";
+import { LogoLockup } from "@/components/logo";
 import { SignupForm } from "./form";
 
 export const metadata = { title: "가입 신청" };
@@ -22,9 +22,9 @@ export default async function SignupPage() {
     <main className="flex min-h-dvh items-center justify-center bg-bg px-5 py-10">
       <div className="w-full max-w-[26rem]">
         <div className="mb-7 flex flex-col items-center text-center">
-          <span className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary text-primary-ink shadow-[var(--shadow)]">
-            <IconCross width={26} height={26} />
-          </span>
+          <div className="mb-5">
+            <LogoLockup size={44} tagline={null} />
+          </div>
           <h1 className="text-xl font-bold tracking-[-0.02em] text-ink">가입 신청</h1>
           <p className="mt-1.5 text-sm leading-relaxed text-ink-3">
             출석하시는 교회를 찾아 신청하시면

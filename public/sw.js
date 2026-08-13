@@ -19,7 +19,7 @@ self.addEventListener("push", (event) => {
     data = { title: "알림", body: event.data ? event.data.text() : "" };
   }
 
-  const title = data.title || "교회 관리";
+  const title = data.title || "심플한교회관리";
   const options = {
     body: data.body || "",
     icon: "/icon.svg",

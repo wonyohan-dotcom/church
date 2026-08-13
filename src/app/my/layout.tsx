@@ -2,7 +2,8 @@ import Link from "next/link";
 import { requireUser } from "@/lib/auth";
 import { getChurch } from "@/lib/church";
 import { isStaff } from "@/lib/auth";
-import { IconCross, IconLogout } from "@/components/icons";
+import { IconLogout } from "@/components/icons";
+import { LogoMark } from "@/components/logo";
 import { ThemeToggle } from "@/components/nav";
 import { MyNav } from "./my-nav";
 
@@ -15,9 +16,7 @@ export default async function MyLayout({ children }: { children: React.ReactNode
       <header className="no-print sticky top-0 z-30 border-b border-line bg-surface/90 backdrop-blur">
         <div className="mx-auto flex max-w-3xl items-center justify-between gap-3 px-4 py-3">
           <Link href="/my" className="flex min-w-0 items-center gap-2.5">
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-ink">
-              <IconCross width={18} height={18} />
-            </span>
+            <LogoMark size={36} decorative className="shrink-0" />
             <span className="min-w-0">
               <span className="block truncate text-[0.95rem] font-bold leading-tight text-ink">
                 {church.name}

@@ -2,7 +2,8 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
 import { STAFF_ROLES, USER_STATUS, type Role, type UserStatus } from "@/lib/constants";
-import { IconClock, IconCross, IconLogout, IconX } from "@/components/icons";
+import { IconClock, IconLogout, IconX } from "@/components/icons";
+import { APP_NAME, LogoMark } from "@/components/logo";
 
 export const metadata = { title: "승인 대기" };
 export const dynamic = "force-dynamic";
@@ -106,9 +107,9 @@ export default async function PendingPage() {
           </button>
         </form>
 
-        <p className="mt-8 flex items-center justify-center gap-1.5 text-xs text-ink-3">
-          <IconCross width={13} height={13} />
-          교회 통합 관리 시스템
+        <p className="mt-8 flex items-center justify-center gap-2 text-xs text-ink-3">
+          <LogoMark size={16} decorative />
+          {APP_NAME}
         </p>
       </div>
     </main>
