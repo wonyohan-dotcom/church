@@ -83,10 +83,15 @@ APP_SECRET="..."
 그리고 표를 만듭니다.
 
 ```bash
-npm run db:migrate
+npm run db:deploy
 ```
 
 Supabase 대시보드 → Table Editor 에 표들이 생겼으면 성공입니다.
+
+> `db:migrate`가 아니라 **`db:deploy`** 입니다.
+> `db:migrate`는 스키마를 새로 설계할 때 쓰는 명령이라 임시 데이터베이스를 하나 더 만들려 하는데,
+> Supabase는 그 권한을 막아 두어 실패합니다. `db:deploy`는 저장소에 이미 들어 있는
+> 설계도를 그대로 적용하기만 하므로 Supabase에서도 잘 동작합니다.
 
 ---
 
@@ -142,7 +147,9 @@ Supabase가 알아서 해주지만, 중요한 자료이니 확인해 두세요.
 | 사진이 안 보임 | `SUPABASE_*` 세 값이 비어 있거나 버킷 이름이 다릅니다. |
 | 사진 업로드 실패 | 버킷이 없거나 `service_role` 키가 아닌 `anon` 키를 넣었습니다. |
 | 로그인이 자꾸 풀림 | 노트북과 서버의 `APP_SECRET`이 다릅니다. |
-| 표가 없다고 나옴 | 2단계 `npm run db:migrate`를 아직 안 했습니다. |
+| 표가 없다고 나옴 | 2단계 `npm run db:deploy`를 아직 안 했습니다. |
+| `P3014` / shadow database 오류 | `db:migrate`를 쓰셨습니다. `npm run db:deploy`로 하세요. |
+| Vercel 빌드 실패 | 환경변수 6개를 다 넣었는지, 특히 `DATABASE_URL`이 있는지 확인하세요. |
 
 ---
 

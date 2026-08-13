@@ -202,7 +202,8 @@ Supabase Storage를 쓰면 디스크가 필요 없어 Vercel 같은 서버리스
 | `npm start`          | 빌드된 앱 실행                                |
 | `npm run typecheck`  | 타입 검사                                     |
 | `npm run lint`       | 코드 검사                                     |
-| `npm run db:migrate` | 데이터베이스 스키마 반영                      |
+| `npm run db:migrate` | 데이터베이스 스키마 반영 (개발용)             |
+| `npm run db:deploy`  | 이미 만들어진 스키마를 그대로 적용 (배포용)   |
 | `npm run db:seed`    | 샘플 데이터 넣기                              |
 | `npm run db:reset`   | 데이터베이스 초기화 (**모든 자료가 지워짐**)  |
 | `npm run db:studio`  | 데이터베이스를 표로 열어 보기                 |
