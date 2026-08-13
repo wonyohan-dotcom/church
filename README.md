@@ -50,6 +50,19 @@ PC 브라우저에서 관리하고, 휴대폰에서도 그대로 사용할 수 �
 
 ## 시작하기
 
+### Supabase 를 쓰신다면 — 명령어 하나면 됩니다
+
+```bash
+npm install
+npm run setup
+```
+
+Supabase 대시보드에서 **연결 주소**와 **service_role 키** 두 개만 복사해 붙여넣으면
+비밀키 생성, `.env` 작성, 사진 보관함 생성, 표 생성, Vercel 용 설정값 정리까지
+전부 자동으로 끝납니다. → [docs/Supabase로-배포하기.md](docs/Supabase로-배포하기.md)
+
+아래는 직접 하나씩 설정하고 싶을 때의 방법입니다.
+
 ### 1. 준비물
 
 - [Node.js](https://nodejs.org) 20 이상
@@ -197,6 +210,7 @@ Supabase Storage를 쓰면 디스크가 필요 없어 Vercel 같은 서버리스
 
 | 명령                 | 하는 일                                       |
 | -------------------- | --------------------------------------------- |
+| `npm run setup`      | Supabase 연결 · 설정 자동 구성                |
 | `npm run dev`        | 개발 서버 실행                                |
 | `npm run build`      | 배포용 빌드                                   |
 | `npm start`          | 빌드된 앱 실행                                |

@@ -20,6 +20,31 @@ Supabase는 **데이터베이스와 파일 저장소**입니다. 앱 자체를 �
 
 ---
 
+## 가장 쉬운 방법 — 설치 도우미
+
+아래 1~3단계를 손으로 하지 않아도 됩니다. 명령어 하나가 대신 해 줍니다.
+
+```bash
+git clone https://github.com/wonyohan-dotcom/church.git
+cd church
+npm install
+npm run setup
+```
+
+물어보는 것은 **두 가지뿐**입니다.
+
+1. Supabase **연결 주소** (Project Settings → Database → Connection string)
+2. Supabase **service_role 키** (Project Settings → API)
+
+나머지 — 비밀키 생성, 5432/6543 주소 계산, `.env` 작성, 사진 보관함 생성,
+비공개 설정 확인, 업로드 동작 검증, 데이터베이스 표 생성, Vercel 에 넣을 값 정리 —
+는 전부 자동으로 처리하고, 마지막에 `.env.vercel` 파일을 만들어 줍니다.
+Vercel 의 Environment Variables 칸에 **그 파일 내용을 통째로 붙여넣으면** 끝입니다.
+
+아래는 무슨 일이 일어나는지 알고 싶거나, 직접 하고 싶은 분을 위한 설명입니다.
+
+---
+
 ## 1. Supabase 준비 (10분)
 
 ### 1-1. 데이터베이스 주소 가져오기
