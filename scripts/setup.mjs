@@ -264,22 +264,42 @@ async function main() {
   info(`Vercel 용      (6543)  ${urls.runtime.replace(/:[^:@]*@/, ":****@")}`);
   info(`Project URL            ${supabaseUrl}`);
 
-  // ── 2. service_role 키 ────────────────────────────────
+  // ── 2. 비밀 키 ────────────────────────────────────────
+  //
+  // Supabase 가 키 체계를 바꾸는 중이라 프로젝트마다 이름이 다르게 보인다.
+  //   새 방식: Publishable key(sb_publishable_…) / Secret key(sb_secret_…)
+  //   옛 방식: anon(eyJ…)                        / service_role(eyJ…)
+  // 어느 쪽이든 '공개용이 아닌 쪽'이 필요하다. 둘 다 안내하고, 공개용을
+  // 붙여넣으면 그 자리에서 잡아 준다. 그냥 넘기면 사진 업로드만 조용히 실패한다.
   console.log();
   line();
-  console.log(c.b("  2/2  service_role 키"));
+  console.log(c.b("  2/2  비밀 키"));
   line();
   console.log();
-  console.log("  Supabase 대시보드에서:");
-  console.log(c.cyan("    Project Settings → API → service_role → Reveal"));
+  console.log("  Supabase 대시보드 → Project Settings → API Keys 에서");
+  console.log("  아래 " + c.b("둘 중 보이는 것") + "을 복사하세요.");
   console.log();
-  console.log("  " + c.yellow("anon 키가 아니라 service_role 키입니다."));
+  console.log(c.cyan("    · Secret key       ") + c.dim("sb_secret_… 로 시작 (새 방식)"));
+  console.log(c.cyan("    · service_role     ") + c.dim("eyJ… 로 시작 (옛 방식, Reveal 클릭)"));
+  console.log();
+  console.log("  " + c.yellow("Publishable / anon 키는 안 됩니다.") + c.dim(" 그건 공개용입니다."));
   console.log(c.dim("  이 키는 이 컴퓨터의 .env 파일에만 저장되며 밖으로 나가지 않습니다."));
   console.log();
 
   const serviceKey = await ask("  키 붙여넣기 > ");
+  if (/^sb_publishable_/.test(serviceKey)) {
+    throw new SetupError(
+      "공개용(Publishable) 키를 넣으셨습니다.",
+      "같은 화면의 Secret key (sb_secret_… 로 시작) 를 복사해 주세요.",
+    );
+  }
   if (serviceKey.length < 40) {
     throw new SetupError("키가 너무 짧습니다.", "Reveal 을 눌러 전체를 복사했는지 확인해 주세요.");
+  }
+  if (!/^(sb_secret_|eyJ)/.test(serviceKey)) {
+    console.log(
+      c.yellow("    처음 보는 모양의 키입니다. 그대로 진행해 보고 안 되면 알려 드리겠습니다."),
+    );
   }
 
   // ── 자동 처리 ─────────────────────────────────────────

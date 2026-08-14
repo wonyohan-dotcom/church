@@ -33,8 +33,8 @@ npm run setup
 
 물어보는 것은 **두 가지뿐**입니다.
 
-1. Supabase **연결 주소** (Project Settings → Database → Connection string)
-2. Supabase **service_role 키** (Project Settings → API)
+1. Supabase **연결 주소** — 대시보드 위쪽 `Connect` 버튼 → **Direct** 탭 → Transaction pooler
+2. Supabase **비밀 키** — Project Settings → API Keys → `Secret key` (없으면 `service_role`)
 
 나머지 — 비밀키 생성, 5432/6543 주소 계산, `.env` 작성, 사진 보관함 생성,
 비공개 설정 확인, 업로드 동작 검증, 데이터베이스 표 생성, Vercel 에 넣을 값 정리 —
@@ -73,14 +73,20 @@ Vercel은 요청마다 서버가 새로 뜨기 때문에, 직접 연결을 쓰�
 
 ### 1-3. 키 가져오기
 
-대시보드 → **Project Settings → API**
+대시보드 → **Project Settings → API Keys**
 
 - `Project URL` → `SUPABASE_URL`
-- `service_role` 키 → `SUPABASE_SERVICE_ROLE_KEY`
+- **비밀 키** → `SUPABASE_SERVICE_ROLE_KEY`
 
-> **주의** `service_role` 키는 모든 권한을 가진 열쇠입니다.
+비밀 키는 프로젝트가 만들어진 시기에 따라 이름이 다릅니다. 둘 중 보이는 것을 쓰면 됩니다.
+
+| 방식 | 공개용 (쓰면 안 됨) | 비밀용 (이걸 씁니다) |
+| --- | --- | --- |
+| 새 방식 | `sb_publishable_…` | **`sb_secret_…`** |
+| 옛 방식 | `anon` (`eyJ…`) | **`service_role`** (`eyJ…`) |
+
+> **주의** 비밀 키는 모든 권한을 가진 열쇠입니다.
 > 서버에서만 쓰이며 브라우저로 절대 나가지 않지만, 채팅이나 메일로 공유하지 마세요.
-> (`anon` 키가 아니라 `service_role` 키입니다)
 
 ---
 
