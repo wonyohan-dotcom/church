@@ -46,6 +46,22 @@ class SetupError extends Error {
   }
 }
 
+const REQUIRED_NODE_MAJOR = 20;
+
+/**
+ * Node 가 낮으면 설치는 멀쩡히 끝나고 화면을 열 때가 되어서야
+ * "renderToReadableStream is not a function" 같은 엉뚱한 오류로 터진다.
+ * 원인과 한참 떨어진 곳에서 터지므로 여기서 먼저 막는다.
+ */
+function checkNodeVersion() {
+  const major = Number(process.versions.node.split(".")[0]);
+  if (major >= REQUIRED_NODE_MAJOR) return;
+  throw new SetupError(
+    `Node.js 버전이 낮습니다. (지금 ${process.versions.node}, ${REQUIRED_NODE_MAJOR} 이상 필요)`,
+    "https://nodejs.org 에서 LTS 버전을 받아 설치한 뒤 터미널을 새로 열고 다시 실행해 주세요.",
+  );
+}
+
 // 대화형으로 실행할 때만 만든다. 이 파일의 순수 함수들은 테스트에서 그냥 import 한다.
 //
 // rl.question() 대신 줄 단위 이터레이터를 쓴다. question() 은 stdin 이 파이프로
@@ -183,6 +199,7 @@ function envFile(values) {
 }
 
 async function main() {
+  checkNodeVersion();
   rl = createInterface({ input: stdin, terminal: Boolean(stdin.isTTY) });
   lines = rl[Symbol.asyncIterator]();
   if (stdin.isTTY) console.clear();
