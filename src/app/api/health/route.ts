@@ -17,6 +17,7 @@ export async function GET() {
 
   return NextResponse.json({
     확인시각: new Date().toISOString(),
+    배포_커밋: process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) ?? "알수없음",
     DATABASE_URL: check("DATABASE_URL"),
     APP_SECRET: check("APP_SECRET"),
     SUPABASE_URL: check("SUPABASE_URL"),
