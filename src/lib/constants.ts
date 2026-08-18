@@ -87,6 +87,9 @@ export const HISTORY_CATEGORIES = {
 } as const;
 export type HistoryCategory = keyof typeof HISTORY_CATEGORIES;
 
+/** 연혁 하나에 붙일 수 있는 사진 최대 장수 */
+export const MAX_HISTORY_PHOTOS = 10;
+
 /** 신규 설치 시 기본 계정과목 */
 export const DEFAULT_ACCOUNTS: Array<{
   code: string;

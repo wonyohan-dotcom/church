@@ -7,30 +7,7 @@ import { requireStaff } from "@/lib/auth";
 import { logAudit } from "@/lib/church";
 import { deleteImage, saveImage } from "@/lib/upload";
 import { parseDate, str } from "@/lib/format";
-
-const MAX_PHOTOS = 10;
-
-/** 폼에 담긴 사진들을 저장해 연혁에 붙인다. */
-async function attachPhotos(churchId: string, eventId: string, formData: FormData) {
-  const files = formData.getAll("photos").slice(0, MAX_PHOTOS);
-  const captions = formData.getAll("photoCaption");
-
-  let sortOrder = await prisma.historyPhoto.count({ where: { eventId } });
-
-  for (const [i, file] of files.entries()) {
-    const url = await saveImage(file, "history");
-    if (!url) continue;
-    await prisma.historyPhoto.create({
-      data: {
-        churchId,
-        eventId,
-        url,
-        caption: typeof captions[i] === "string" ? (captions[i] as string) || null : null,
-        sortOrder: sortOrder++,
-      },
-    });
-  }
-}
+import { MAX_HISTORY_PHOTOS } from "@/lib/constants";
 
 function readForm(formData: FormData) {
   return {
@@ -52,12 +29,6 @@ export async function createHistoryEvent(formData: FormData) {
   const event = await prisma.historyEvent.create({
     data: { ...data, churchId: user.churchId, date: data.date },
   });
-
-  try {
-    await attachPhotos(user.churchId, event.id, formData);
-  } catch {
-    redirect(`/history/${event.id}?error=photo`);
-  }
 
   await logAudit({
     churchId: user.churchId,
@@ -85,12 +56,6 @@ export async function updateHistoryEvent(id: string, formData: FormData) {
     where: { id },
     data: { ...data, date: data.date },
   });
-
-  try {
-    await attachPhotos(user.churchId, id, formData);
-  } catch {
-    redirect(`/history/${id}?error=photo`);
-  }
 
   await logAudit({
     churchId: user.churchId,
@@ -131,6 +96,43 @@ export async function deleteHistoryEvent(id: string) {
 
   revalidatePath("/history");
   redirect("/history");
+}
+
+/**
+ * 사진을 한 장씩 올린다.
+ *
+ * 여러 장을 한 번에 묶어 보내면 Vercel 이 요청 하나당 정해 둔 크기 한도(4.5MB)를
+ * 쉽게 넘는다. 폰 카메라 사진 몇 장만 모여도 그 한도를 넘기므로, 화면에서 한 장씩
+ * 순서대로 이 함수를 호출해 올린다.
+ */
+export async function addHistoryPhoto(eventId: string, formData: FormData) {
+  const user = await requireStaff();
+
+  const event = await prisma.historyEvent.findUnique({ where: { id: eventId } });
+  if (!event || event.churchId !== user.churchId) {
+    throw new Error("연혁을 찾을 수 없습니다.");
+  }
+
+  const count = await prisma.historyPhoto.count({ where: { eventId } });
+  if (count >= MAX_HISTORY_PHOTOS) {
+    throw new Error(`사진은 최대 ${MAX_HISTORY_PHOTOS}장까지 붙일 수 있습니다.`);
+  }
+
+  const url = await saveImage(formData.get("photo"), "history");
+  if (!url) return;
+
+  await prisma.historyPhoto.create({
+    data: {
+      churchId: user.churchId,
+      eventId,
+      url,
+      caption: str(formData.get("caption")) ?? null,
+      sortOrder: count,
+    },
+  });
+
+  revalidatePath(`/history/${eventId}`);
+  revalidatePath("/history");
 }
 
 export async function deleteHistoryPhoto(photoId: string) {

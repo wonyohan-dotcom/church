@@ -8,7 +8,7 @@ export const metadata = { title: "교인 등록" };
 
 const ERRORS: Record<string, string> = {
   name: "이름은 반드시 입력해야 합니다.",
-  photo: "사진을 저장하지 못했습니다. 8MB 이하의 이미지 파일인지 확인해 주세요.",
+  photo: "사진을 저장하지 못했습니다. 4MB 이하의 이미지 파일인지 확인해 주세요.",
 };
 
 export default async function NewMemberPage({

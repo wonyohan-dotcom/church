@@ -138,7 +138,7 @@ export function PhotoInput({
             사진 선택
           </button>
           <p className="mt-1.5 text-xs text-ink-3">
-            {hint ?? "휴대폰에서는 카메라로 바로 촬영할 수 있습니다. (최대 8MB)"}
+            {hint ?? "휴대폰에서는 카메라로 바로 촬영할 수 있습니다. (최대 4MB)"}
           </p>
           {currentUrl && (
             <label className="mt-1.5 flex items-center gap-1.5 text-xs text-ink-2">
@@ -151,87 +151,6 @@ export function PhotoInput({
   );
 }
 
-/**
- * 사진 여러 장을 한 번에 올리는 필드.
- * 고른 사진마다 설명을 달 수 있고, 올리기 전에 미리보기로 확인한다.
- */
-export function PhotosInput({
-  name = "photos",
-  max = 10,
-}: {
-  name?: string;
-  max?: number;
-}) {
-  const [files, setFiles] = useState<Array<{ url: string; fileName: string }>>([]);
-  const inputRef = useRef<HTMLInputElement>(null);
-  const urls = useRef<string[]>([]);
-
-  useEffect(() => {
-    return () => {
-      for (const u of urls.current) URL.revokeObjectURL(u);
-    };
-  }, []);
-
-  function onChange(e: React.ChangeEvent<HTMLInputElement>) {
-    for (const u of urls.current) URL.revokeObjectURL(u);
-    urls.current = [];
-
-    const picked = Array.from(e.target.files ?? []).slice(0, max);
-    setFiles(
-      picked.map((f) => {
-        const url = URL.createObjectURL(f);
-        urls.current.push(url);
-        return { url, fileName: f.name };
-      }),
-    );
-  }
-
-  return (
-    <div>
-      <span className="label">사진 (최대 {max}장)</span>
-      <input
-        ref={inputRef}
-        type="file"
-        name={name}
-        accept="image/*"
-        multiple
-        onChange={onChange}
-        className="sr-only"
-      />
-      <button
-        type="button"
-        className="btn btn-ghost"
-        onClick={() => inputRef.current?.click()}
-      >
-        <IconCamera width={16} height={16} />
-        {files.length > 0 ? `${files.length}장 선택됨 · 다시 고르기` : "사진 선택"}
-      </button>
-      <p className="mt-1.5 text-xs text-ink-3">
-        휴대폰에서는 카메라로 바로 찍거나 앨범에서 여러 장을 고를 수 있습니다. (장당 8MB 이하)
-      </p>
-
-      {files.length > 0 && (
-        <ul className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
-          {files.map((f) => (
-            <li key={f.url}>
-              <div className="aspect-[4/3] overflow-hidden rounded-xl border border-line bg-surface-2">
-                {/* 아직 서버에 올라가지 않은 로컬 미리보기라 기본 img를 쓴다. */}
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={f.url} alt="" className="h-full w-full object-cover" />
-              </div>
-              <input
-                type="text"
-                name="photoCaption"
-                className="field mt-1.5 text-xs"
-                placeholder="사진 설명 (선택)"
-              />
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
-  );
-}
 
 /** 입력하는 동안 천 단위 구분기호를 보여주는 금액 필드 */
 export function AmountInput({

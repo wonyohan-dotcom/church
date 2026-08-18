@@ -14,7 +14,9 @@ import { STORAGE_BUCKET, supabase, supabaseConfigured } from "./storage";
 export const UPLOAD_ROOT =
   process.env.UPLOAD_DIR ?? path.join(process.cwd(), "data", "uploads");
 
-const MAX_BYTES = 8 * 1024 * 1024; // 8MB
+// Vercel 은 요청 하나당 4.5MB 로 크기를 막아 두고 있고, 이건 설정으로 못 늘린다.
+// 그 안에서 안전하게 여유를 두고 4MB 로 잡는다.
+const MAX_BYTES = 4 * 1024 * 1024; // 4MB
 const ALLOWED = new Map([
   ["image/jpeg", "jpg"],
   ["image/png", "png"],
@@ -38,7 +40,7 @@ export async function saveImage(
   if (file.size === 0) return null;
 
   if (file.size > MAX_BYTES) {
-    throw new Error("이미지 용량은 8MB를 넘을 수 없습니다.");
+    throw new Error("이미지 용량은 4MB를 넘을 수 없습니다.");
   }
 
   const ext = ALLOWED.get(file.type);

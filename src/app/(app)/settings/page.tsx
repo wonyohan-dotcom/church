@@ -38,7 +38,7 @@ const MESSAGES: Record<string, { tone: "income" | "expense" | "warn"; text: stri
   "password-reset": { tone: "income", text: "비밀번호가 재설정되었습니다." },
   approved: { tone: "income", text: "가입을 승인했습니다. 바로 사용하실 수 있습니다." },
   rejected: { tone: "income", text: "가입 신청을 거절했습니다." },
-  image: { tone: "expense", text: "이미지를 저장하지 못했습니다. 8MB 이하인지 확인해 주세요." },
+  image: { tone: "expense", text: "이미지를 저장하지 못했습니다. 4MB 이하인지 확인해 주세요." },
   "user-input": {
     tone: "expense",
     text: "이름과 아이디를 입력하고 비밀번호는 8자 이상으로 정해 주세요.",

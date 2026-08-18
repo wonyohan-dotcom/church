@@ -4,9 +4,11 @@ import { prisma } from "@/lib/prisma";
 import { requireStaff } from "@/lib/auth";
 import { HISTORY_CATEGORIES, type HistoryCategory } from "@/lib/constants";
 import { ymd } from "@/lib/format";
-import { Alert, Badge, Card, CardTitle, PageHeader } from "@/components/ui";
+import { Badge, Card, CardTitle, PageHeader } from "@/components/ui";
 import { ConfirmSubmitButton } from "@/components/form";
 import { deleteHistoryEvent, deleteHistoryPhoto } from "../actions";
+import { MAX_HISTORY_PHOTOS } from "@/lib/constants";
+import { HistoryPhotoUploader } from "./photo-uploader";
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -19,14 +21,11 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 
 export default async function HistoryDetailPage({
   params,
-  searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ error?: string }>;
 }) {
   const staff = await requireStaff();
   const { id } = await params;
-  const sp = await searchParams;
 
   const event = await prisma.historyEvent.findUnique({
     where: { id },
@@ -56,14 +55,6 @@ export default async function HistoryDetailPage({
         }
       />
 
-      {sp.error === "photo" && (
-        <div className="mb-5">
-          <Alert tone="expense">
-            일부 사진을 저장하지 못했습니다. 장당 8MB 이하의 이미지인지 확인해 주세요.
-          </Alert>
-        </div>
-      )}
-
       <Card className="mb-5">
         <div className="mb-3 flex flex-wrap items-center gap-2">
           <Badge tone="primary">
@@ -83,9 +74,7 @@ export default async function HistoryDetailPage({
       <Card>
         <CardTitle>사진 ({event.photos.length}장)</CardTitle>
         {event.photos.length === 0 ? (
-          <p className="py-6 text-center text-sm text-ink-3">
-            첨부된 사진이 없습니다. 수정 화면에서 사진을 추가할 수 있습니다.
-          </p>
+          <p className="py-6 text-center text-sm text-ink-3">첨부된 사진이 없습니다.</p>
         ) : (
           <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3">
             {event.photos.map((p) => (
@@ -121,6 +110,11 @@ export default async function HistoryDetailPage({
             ))}
           </ul>
         )}
+
+        <HistoryPhotoUploader
+          eventId={event.id}
+          remaining={MAX_HISTORY_PHOTOS - event.photos.length}
+        />
       </Card>
     </>
   );

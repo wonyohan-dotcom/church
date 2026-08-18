@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Card, CardTitle, Field } from "@/components/ui";
-import { PhotosInput, SubmitButton } from "@/components/form";
+import { SubmitButton } from "@/components/form";
 import { HISTORY_CATEGORIES } from "@/lib/constants";
 import { ymdDash } from "@/lib/format";
 import type { HistoryEventModel } from "@/generated/prisma/models";
@@ -90,23 +90,17 @@ export function HistoryForm({
         </div>
       </Card>
 
-      <Card>
-        <CardTitle>사진 추가</CardTitle>
-        <PhotosInput />
-        {event && (
-          <p className="mt-3 text-xs text-ink-3">
-            기존 사진은 그대로 유지되고, 여기서 고른 사진이 뒤에 추가됩니다.
-          </p>
-        )}
-      </Card>
+      {!event && (
+        <p className="text-xs text-ink-3">
+          사진은 등록한 뒤, 상세 화면에서 추가할 수 있습니다.
+        </p>
+      )}
 
       <div className="flex items-center justify-end gap-2 pb-2">
         <Link href={cancelHref} className="btn btn-ghost">
           취소
         </Link>
-        <SubmitButton pendingLabel="저장 중… (사진이 많으면 조금 걸립니다)">
-          {submitLabel}
-        </SubmitButton>
+        <SubmitButton>{submitLabel}</SubmitButton>
       </div>
     </form>
   );
