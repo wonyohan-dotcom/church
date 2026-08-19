@@ -220,6 +220,21 @@ body {
   background: var(--surface-2);
   color: var(--ink-3);
 }
+/*
+ * .field 의 padding 단축 속성이 나중에 로드되어 pr-9 같은 Tailwind 오른쪽
+ * 패딩 유틸리티를 덮어써 버린다(둘 다 클래스 선택자라 우선순위가 같고,
+ * 스타일시트에서 .field 가 뒤에 오면 그게 이긴다). 금액 입력창의 "원" 표시가
+ * 숫자와 겹쳐 보이던 원인이 이것이었다. 이 조합 선택자로 확실히 이기게 한다.
+ */
+.field.pr-9 {
+  padding-right: 2.5rem;
+}
+.field.pl-9 {
+  padding-left: 2.5rem;
+}
+.field.px-2.py-1 {
+  padding: 0.25rem 0.5rem;
+}
 select.field {
   appearance: none;
   background-image: linear-gradient(45deg, transparent 50%, var(--ink-3) 50%),
