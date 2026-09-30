@@ -485,6 +485,7 @@ model Visit {
 // direction : IN(입금) | OUT(출금)
 // status    : PENDING(확인 대기) | RECORDED(장부 반영) | IGNORED(장부와 무관)
 // source    : SHORTCUT(휴대폰 단축어) | MANUAL(직접 붙여넣기)
+//             | BALANCE(문자는 없었지만 앞뒤 문자의 잔액 차이로 찾아낸 거래)
 // ─────────────────────────────────────────────
 
 model BankAlert {

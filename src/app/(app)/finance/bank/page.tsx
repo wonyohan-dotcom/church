@@ -176,6 +176,7 @@ export default async function BankInboxPage({
         <ul className="space-y-3">
           {alerts.map((a, i) => {
             const isIn = a.direction === "IN";
+            const fromBalance = a.source === "BALANCE";
             const s = suggestions[i];
             const accounts = isIn ? incomeAccounts : expenseAccounts;
             return (
@@ -184,12 +185,25 @@ export default async function BankInboxPage({
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-1.5">
                       <Badge tone={isIn ? "income" : "expense"}>{isIn ? "입금" : "출금"}</Badge>
+                      {fromBalance && <Badge tone="warn">문자 없음</Badge>}
                       {a.bankName && <span className="text-xs text-ink-3">{a.bankName}</span>}
-                      <span className="text-xs text-ink-3">{when(a.occurredAt)}</span>
+                      <span className="text-xs text-ink-3">
+                        {fromBalance
+                          ? `${when(new Date(a.occurredAt.getTime() + 1000))} 이전`
+                          : when(a.occurredAt)}
+                      </span>
                     </div>
                     <p className="mt-1.5 truncate font-semibold text-ink">
-                      {a.counterparty ?? "(이름 없음)"}
+                      {fromBalance
+                        ? `문자로 오지 않은 ${isIn ? "입금" : "출금"}`
+                        : (a.counterparty ?? "(이름 없음)")}
                     </p>
+                    {fromBalance && tab === "pending" && (
+                      <p className="mt-0.5 text-xs text-ink-3">
+                        잔액 차이로 찾았습니다.{" "}
+                        {isIn ? "누구의 헌금인지 확인해 주세요." : "어디에 쓴 돈인지 확인해 주세요."}
+                      </p>
+                    )}
                   </div>
                   <p
                     className={`tnum shrink-0 whitespace-nowrap text-lg font-bold ${isIn ? "text-income" : "text-expense"}`}
@@ -276,7 +290,7 @@ export default async function BankInboxPage({
 
                     <div className="mt-3 flex items-center justify-between gap-2 border-t border-line pt-3">
                       <details className="min-w-0 text-xs text-ink-3">
-                        <summary className="cursor-pointer">받은 문자 보기</summary>
+                        <summary className="cursor-pointer">{fromBalance ? "계산 근거 보기" : "받은 문자 보기"}</summary>
                         <pre className="mt-1 whitespace-pre-wrap break-words font-sans">{a.rawText}</pre>
                       </details>
                       <form action={ignoreBankAlert.bind(null, a.id)} className="shrink-0">

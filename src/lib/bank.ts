@@ -4,7 +4,9 @@ import { logAudit } from "./church";
 import { notifyRoles } from "./push";
 import { won } from "./format";
 import { parseBankMessage, splitMessages } from "./bank-sms";
+import { accountTag, balanceGaps, gapKey, parseGapKey } from "./bank-balance";
 import type { BankAlertModel } from "@/generated/prisma/models";
+import type { Prisma } from "@/generated/prisma/client";
 
 /**
  * 은행 입출금 알림을 받아 쌓고, 가능하면 장부(헌금·지출)에 바로 기록한다.
@@ -44,6 +46,8 @@ type IngestResult = {
   saved: BankAlertModel[];
   duplicates: number;
   unreadable: number;
+  /** 잔액이 맞지 않아 새로 만든 '문자 없이 오간 돈' 알림 */
+  gaps: BankAlertModel[];
 };
 
 export function newBankToken() {
@@ -70,37 +74,41 @@ export async function ingestBankText(
 ): Promise<IngestResult> {
   // 단축어는 문자 한 통씩 보낸다. 직접 붙여넣을 때만 여러 통으로 나눠 본다.
   const messages = source === "MANUAL" ? splitMessages(text) : [text.trim()];
-  const result: IngestResult = { saved: [], duplicates: 0, unreadable: 0 };
+  const result: IngestResult = { saved: [], duplicates: 0, unreadable: 0, gaps: [] };
 
+  const rows: Prisma.BankAlertCreateManyInput[] = [];
   for (const message of messages) {
     const parsed = parseBankMessage(message);
     if (!parsed) {
       result.unreadable++;
       continue;
     }
-    try {
-      const alert = await prisma.bankAlert.create({
-        data: {
-          churchId,
-          direction: parsed.direction,
-          amount: parsed.amount,
-          balance: parsed.balance,
-          counterparty: parsed.counterparty,
-          bankName: parsed.bankName,
-          occurredAt: parsed.occurredAt ?? new Date(),
-          rawText: message.slice(0, 2000),
-          source,
-          dedupKey: dedupKey(message),
-        },
-      });
-      result.saved.push(alert);
-    } catch (e) {
-      if ((e as { code?: string }).code === "P2002") {
-        result.duplicates++;
-        continue;
-      }
-      throw e;
-    }
+    rows.push({
+      churchId,
+      direction: parsed.direction,
+      amount: parsed.amount,
+      balance: parsed.balance,
+      counterparty: parsed.counterparty,
+      bankName: parsed.bankName,
+      occurredAt: parsed.occurredAt ?? new Date(),
+      rawText: message.slice(0, 2000),
+      source,
+      dedupKey: dedupKey(message),
+    });
+  }
+
+  if (rows.length > 0) {
+    // 문자 두 통이 거의 동시에 들어와도 잔액을 차례로 맞춰 볼 수 있도록 교회별로 줄을 세운다.
+    await prisma.$transaction(
+      async (tx) => {
+        await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`bank:${churchId}`}))`;
+        // 이미 받은 문자는 건너뛴다 (같은 문자가 두 번 와도 한 번만 쌓인다).
+        result.saved = await tx.bankAlert.createManyAndReturn({ data: rows, skipDuplicates: true });
+        result.duplicates = rows.length - result.saved.length;
+        result.gaps = await reconcileBalances(tx, churchId, result.saved);
+      },
+      { timeout: 20_000, maxWait: 20_000 },
+    );
   }
 
   const church = await prisma.church.findUnique({
@@ -135,7 +143,108 @@ export async function ingestBankText(
     }).catch(() => {});
   }
 
+  // 문자 없이 오간 돈은 누구의 헌금인지 알 수 없으므로 자동 기록하지 않고 사람에게 묻는다.
+  for (const gap of result.gaps) {
+    const isIn = gap.direction === "IN";
+    await notifyRoles(churchId, ["ADMIN", "FINANCE"], {
+      title: `문자 없이 ${isIn ? "들어온 입금" : "나간 출금"} ${won(gap.amount)}`,
+      body: isIn
+        ? "잔액을 맞춰 보니 입금 문자가 빠졌습니다. 누구의 헌금인지 확인해 주세요."
+        : "잔액을 맞춰 보니 출금 문자가 빠졌습니다. 어디에 쓴 돈인지 확인해 주세요.",
+      url: "/finance/bank",
+      tag: `bank-${gap.id}`,
+    }).catch(() => {});
+  }
+
   return result;
+}
+
+type Tx = Parameters<Parameters<typeof prisma.$transaction>[0]>[0];
+
+/** 같은 통장인지 가르는 열쇠: 은행 + 계좌번호 끝자리 */
+function accountKey(a: Pick<BankAlertModel, "bankName" | "rawText">) {
+  return `${a.bankName ?? ""}|${accountTag(a.rawText) ?? ""}`;
+}
+
+function shortWhen(d: Date) {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getMonth() + 1}/${d.getDate()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+/**
+ * 새로 들어온 문자의 잔액을 앞뒤 문자와 맞춰 본다.
+ * 잔액이 이어지지 않으면 그 차이만큼 '문자 없이 오간 돈' 알림(source BALANCE)을 만든다.
+ * 늦게 들어온 문자가 그 틈을 메우면, 아직 확인 전인 차이 알림은 지운다.
+ */
+async function reconcileBalances(tx: Tx, churchId: string, saved: BankAlertModel[]) {
+  const created: BankAlertModel[] = [];
+  const withBalance = saved.filter((a) => a.balance !== null && a.bankName);
+  const keys = new Set(withBalance.map(accountKey));
+
+  for (const key of keys) {
+    const mine = withBalance.filter((a) => accountKey(a) === key);
+    const newIds = new Set(mine.map((a) => a.id));
+    const times = mine.map((a) => a.occurredAt.getTime());
+    const from = new Date(Math.min(...times));
+    const to = new Date(Math.max(...times));
+    const base = {
+      churchId,
+      bankName: mine[0].bankName,
+      balance: { not: null },
+      source: { not: "BALANCE" },
+    } as const;
+
+    // 새 문자 앞뒤로 몇 통씩만 본다. 같은 은행의 다른 통장 문자는 계좌번호로 걸러낸다.
+    const [before, within, after] = await Promise.all([
+      tx.bankAlert.findMany({ where: { ...base, occurredAt: { lt: from } }, orderBy: { occurredAt: "desc" }, take: 20 }),
+      tx.bankAlert.findMany({ where: { ...base, occurredAt: { gte: from, lte: to } } }),
+      tx.bankAlert.findMany({ where: { ...base, occurredAt: { gt: to } }, orderBy: { occurredAt: "asc" }, take: 20 }),
+    ]);
+    const window = [...before, ...within, ...after].filter((a) => accountKey(a) === key);
+    const windowIds = new Set(window.map((a) => a.id));
+    const gaps = balanceGaps(window);
+    const pairs = new Set(gaps.map((g) => gapKey(g.prev.id, g.next.id)));
+
+    // 새 문자가 끼어들어 더는 앞뒤가 아닌 차이 알림은, 아직 확인 전이면 지운다.
+    const oldGaps = await tx.bankAlert.findMany({
+      where: { churchId, source: "BALANCE", status: "PENDING", dedupKey: { startsWith: "gap-" } },
+      select: { id: true, dedupKey: true },
+    });
+    const stale = oldGaps.filter((g) => {
+      const ids = parseGapKey(g.dedupKey);
+      return ids && windowIds.has(ids[0]) && windowIds.has(ids[1]) && !pairs.has(g.dedupKey);
+    });
+    if (stale.length > 0) {
+      await tx.bankAlert.deleteMany({ where: { id: { in: stale.map((g) => g.id) } } });
+    }
+
+    const fresh = gaps.filter((g) => newIds.has(g.prev.id) || newIds.has(g.next.id));
+    if (fresh.length === 0) continue;
+    const rows = await tx.bankAlert.createManyAndReturn({
+      data: fresh.map((g) => ({
+        churchId,
+        direction: g.gap > 0 ? "IN" : "OUT",
+        amount: Math.abs(g.gap),
+        balance: null,
+        counterparty: null,
+        bankName: g.next.bankName,
+        // 정확한 시각은 알 수 없다. 다음 문자 바로 앞으로 둔다.
+        occurredAt: new Date(g.next.occurredAt.getTime() - 1000),
+        rawText: [
+          `잔액으로 계산한 ${g.gap > 0 ? "입금" : "출금"}입니다 (${g.gap > 0 ? "입금" : "출금"} 문자가 오지 않았습니다).`,
+          `· ${shortWhen(g.prev.occurredAt)} 문자 뒤 잔액: ${won(g.prev.balance ?? 0)}`,
+          `· ${shortWhen(g.next.occurredAt)} ${g.next.direction === "IN" ? "입금" : "출금"} ${won(g.next.amount)} 전 잔액: ${won(g.expectedBefore)}`,
+          `· 차이: ${g.gap > 0 ? "+" : "−"}${won(Math.abs(g.gap))}`,
+          "두 문자 사이에 여러 건이 오갔다면 합친 금액입니다.",
+        ].join("\n"),
+        source: "BALANCE",
+        dedupKey: gapKey(g.prev.id, g.next.id),
+      })),
+      skipDuplicates: true,
+    });
+    created.push(...rows);
+  }
+  return created;
 }
 
 /**
