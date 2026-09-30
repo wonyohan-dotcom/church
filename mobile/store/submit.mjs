@@ -304,10 +304,18 @@ say(`설명·키워드 (${vLoc.attributes.locale})`);
 
 // ── 6. 빌드 연결 ───────────────────────────────
 {
-  const builds = await get(
-    `/v1/builds?filter[app]=${app.id}&filter[preReleaseVersion.version]=${L.version}&filter[processingState]=VALID&filter[expired]=false&sort=-uploadedDate&limit=1`,
-  );
-  const build = builds.data[0];
+  // 가장 최근에 올린 빌드를 쓴다. 애플이 아직 처리 중이면 끝날 때까지(최대 30분) 기다린다.
+  const latestUrl = `/v1/builds?filter[app]=${app.id}&filter[preReleaseVersion.version]=${L.version}&filter[expired]=false&sort=-uploadedDate&limit=1`;
+  let build = (await get(latestUrl)).data[0];
+  for (let i = 0; build && build.attributes.processingState === "PROCESSING" && i < 60; i++) {
+    if (i === 0) say(`빌드 ${build.attributes.version} 을 애플이 처리하는 중입니다. 기다립니다…`);
+    await new Promise((r) => setTimeout(r, 30_000));
+    build = (await get(latestUrl)).data[0];
+  }
+  if (build && build.attributes.processingState !== "VALID") {
+    note(`최근 빌드 ${build.attributes.version} 상태가 ${build.attributes.processingState} 입니다. 쓸 수 있는 이전 빌드를 씁니다.`);
+    build = (await get(`${latestUrl}&filter[processingState]=VALID`)).data[0];
+  }
   if (!build) {
     note("쓸 수 있는 빌드가 없습니다. TestFlight 업로드가 끝났는지 확인해 주세요.");
   } else {
