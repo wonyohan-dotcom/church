@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Noto_Serif_KR } from "next/font/google";
 import "./pretendard.css";
 import "./globals.css";
+import { SwipeBack } from "@/components/swipe-back";
 
 export const metadata: Metadata = {
   title: {
@@ -42,7 +43,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT }} />
 
       </head>
-      <body>{children}</body>
+      <body>
+        {children}
+        <SwipeBack />
+      </body>
     </html>
   );
 }
