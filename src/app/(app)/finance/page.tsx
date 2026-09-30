@@ -55,6 +55,10 @@ export default async function FinancePage({
     }),
   ]);
 
+  const bankPending = canManageFinance(staff.role)
+    ? await prisma.bankAlert.count({ where: { churchId: staff.churchId, status: "PENDING" } })
+    : 0;
+
   const balance = summary.totalIncome - summary.totalExpense;
   const monthLabel = isThisYear ? `${month}월` : "12월";
   const canEdit = canManageFinance(staff.role);
@@ -71,6 +75,14 @@ export default async function FinancePage({
             <YearSelect year={year} years={years} basePath="/finance" />
             {canEdit && (
               <>
+                <Link href="/finance/bank" className="btn btn-ghost">
+                  입출금 알림함
+                  {bankPending > 0 && (
+                    <span className="tnum rounded-full bg-primary px-1.5 text-xs font-bold text-white">
+                      {bankPending}
+                    </span>
+                  )}
+                </Link>
                 <Link href="/finance/expenses/new" className="btn btn-ghost">
                   지출 입력
                 </Link>
@@ -83,6 +95,16 @@ export default async function FinancePage({
           </>
         }
       />
+
+      {bankPending > 0 && (
+        <Link
+          href="/finance/bank"
+          className="mb-5 flex items-center justify-between gap-3 rounded-xl bg-primary-soft px-4 py-3 text-sm font-semibold text-primary-soft-ink"
+        >
+          <span>은행 입출금 알림 {bankPending}건이 기록을 기다리고 있습니다.</span>
+          <span aria-hidden>→</span>
+        </Link>
+      )}
 
       <div className="mb-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
         <StatCard

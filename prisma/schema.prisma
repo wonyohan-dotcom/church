@@ -35,6 +35,11 @@ model Church {
   receiptAutoIssue Boolean @default(true) // 신청 즉시 자동 발급
   joinOpen         Boolean @default(true) // 성도의 가입 신청 허용 여부
 
+  // 은행 입출금 알림 받기 (휴대폰 단축어가 문자를 보내는 주소의 비밀 열쇠)
+  bankToken           String? @unique
+  bankAutoRecord      Boolean @default(false) // 알아볼 수 있는 입출금은 확인 없이 바로 장부에 기록
+  bankIncomeAccountId String? // 자동 기록할 때 입금에 쓸 기본 헌금 항목
+
   users         User[]
   members       Member[]
   districts     District[]
@@ -47,6 +52,7 @@ model Church {
   historyEvents HistoryEvent[]
   historyPhotos HistoryPhoto[]
   auditLogs     AuditLog[]
+  bankAlerts    BankAlert[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -246,6 +252,8 @@ model Offering {
   method String  @default("CASH") // CASH 현금 | TRANSFER 계좌이체 | CARD 카드
   note   String?
 
+  bankAlert BankAlert?
+
   createdById String?
   createdBy   User?   @relation("OfferingCreator", fields: [createdById], references: [id], onDelete: SetNull)
 
@@ -273,6 +281,8 @@ model Expense {
   description String?
   receiptUrl  String? // 영수증 사진
   note        String?
+
+  bankAlert BankAlert?
 
   createdById String?
   createdBy   User?   @relation("ExpenseCreator", fields: [createdById], references: [id], onDelete: SetNull)
@@ -393,6 +403,44 @@ model HistoryPhoto {
 
   @@index([eventId])
   @@index([churchId])
+}
+
+// ─────────────────────────────────────────────
+// 은행 입출금 알림
+// 교회 통장의 입출금 문자를 휴대폰 단축어가 서버로 보내면 여기에 쌓인다.
+// 회계 담당자가 확인하고 헌금·지출로 기록하거나, 규칙에 따라 자동으로 기록된다.
+// direction : IN(입금) | OUT(출금)
+// status    : PENDING(확인 대기) | RECORDED(장부 반영) | IGNORED(장부와 무관)
+// source    : SHORTCUT(휴대폰 단축어) | MANUAL(직접 붙여넣기)
+// ─────────────────────────────────────────────
+
+model BankAlert {
+  id           String   @id @default(cuid())
+  direction    String
+  amount       Int
+  balance      Int? // 거래 후 잔액
+  counterparty String? // 보낸 사람 / 받는 곳
+  bankName     String?
+  occurredAt   DateTime
+  rawText      String
+  source       String   @default("SHORTCUT")
+  status       String   @default("PENDING")
+  dedupKey     String // 같은 문자가 두 번 들어와도 한 번만 쌓이도록
+
+  churchId String
+  church   Church @relation(fields: [churchId], references: [id], onDelete: Cascade)
+
+  offeringId String?   @unique
+  offering   Offering? @relation(fields: [offeringId], references: [id], onDelete: SetNull)
+  expenseId  String?   @unique
+  expense    Expense?  @relation(fields: [expenseId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([churchId, dedupKey])
+  @@index([churchId, status, occurredAt])
+  @@index([churchId, counterparty])
 }
 
 // ─────────────────────────────────────────────

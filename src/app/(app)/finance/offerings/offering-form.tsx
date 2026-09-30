@@ -17,6 +17,7 @@ export function OfferingForm({
   submitLabel,
   deleteAction,
   showRepeat,
+  bank,
 }: {
   action: (formData: FormData) => void | Promise<void>;
   accounts: AccountModel[];
@@ -28,10 +29,13 @@ export function OfferingForm({
   submitLabel: string;
   deleteAction?: (formData: FormData) => void | Promise<void>;
   showRepeat?: boolean;
+  /** 입출금 알림함에서 넘어온 경우: 알림 내용으로 칸을 채우고, 저장하면 알림과 연결한다. */
+  bank?: { id: string; date: string; amount: number; donorName: string | null } | null;
 }) {
   return (
     <div className="space-y-5">
       <form action={action} className="space-y-5">
+        {bank && <input type="hidden" name="bankAlertId" value={bank.id} />}
         <Card>
           <CardTitle>헌금 내용</CardTitle>
           <div className="space-y-4">
@@ -43,7 +47,7 @@ export function OfferingForm({
                   className="field"
                   required
                   defaultValue={
-                    ymdDash(offering?.date) || defaultDate || ymdDash(new Date())
+                    ymdDash(offering?.date) || bank?.date || defaultDate || ymdDash(new Date())
                   }
                 />
               </Field>
@@ -67,9 +71,9 @@ export function OfferingForm({
             <Field label="금액" required>
               <AmountInput
                 name="amount"
-                defaultValue={offering?.amount ?? null}
+                defaultValue={offering?.amount ?? bank?.amount ?? null}
                 required
-                autoFocus={!offering}
+                autoFocus={!offering && !bank}
               />
             </Field>
 
@@ -84,14 +88,14 @@ export function OfferingForm({
                   name="donorName"
                   className="field"
                   placeholder="예) 익명, 방문 성도"
-                  defaultValue={offering?.donorName ?? ""}
+                  defaultValue={offering?.donorName ?? bank?.donorName ?? ""}
                 />
               </Field>
               <Field label="납부 방법">
                 <select
                   name="method"
                   className="field"
-                  defaultValue={offering?.method ?? "CASH"}
+                  defaultValue={offering?.method ?? (bank ? "TRANSFER" : "CASH")}
                 >
                   {Object.entries(PAYMENT_METHODS).map(([v, l]) => (
                     <option key={v} value={v}>
@@ -114,13 +118,13 @@ export function OfferingForm({
         </Card>
 
         <div className="flex flex-wrap items-center justify-end gap-2 pb-2">
-          {showRepeat && (
+          {showRepeat && !bank && (
             <label className="mr-auto flex items-center gap-2 text-sm text-ink-2">
               <input type="checkbox" name="again" value="1" defaultChecked />
               저장 후 이어서 입력하기
             </label>
           )}
-          <Link href="/finance/offerings" className="btn btn-ghost">
+          <Link href={bank ? "/finance/bank" : "/finance/offerings"} className="btn btn-ghost">
             취소
           </Link>
           <SubmitButton>{submitLabel}</SubmitButton>

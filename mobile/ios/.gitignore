@@ -1,0 +1,11 @@
+App/build
+App/Pods
+App/output
+DerivedData
+xcuserdata
+
+# Cordova plugins for Capacitor
+capacitor-cordova-ios-plugins
+
+# 설정 파일(capacitor.config.json 등)과 public/ 은 일부러 저장소에 둔다.
+# 맥에서 npm 설치 없이 Xcode 로 바로 열어 올릴 수 있게 하기 위해서다.

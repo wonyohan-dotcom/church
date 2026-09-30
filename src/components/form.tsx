@@ -3,6 +3,7 @@
 import { useFormStatus } from "react-dom";
 import { useEffect, useRef, useState } from "react";
 import { IconCamera } from "./icons";
+import { MAX_UPLOAD_BYTES, shrinkImage } from "@/lib/shrink-image";
 
 /** 제출 중에는 스스로 비활성화되는 버튼 */
 export function SubmitButton({
@@ -89,17 +90,48 @@ export function PhotoInput({
     };
   }, []);
 
-  function onChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const pick = useRef(0);
+
+  function show(file: File | null) {
     if (objectUrl.current) URL.revokeObjectURL(objectUrl.current);
+    objectUrl.current = file ? URL.createObjectURL(file) : null;
+    setPreview(objectUrl.current ?? currentUrl ?? null);
+  }
+
+  async function onChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const input = e.target;
+    const file = input.files?.[0] ?? null;
+    const ticket = ++pick.current;
+    setError(null);
+    show(file);
     if (!file) {
-      objectUrl.current = null;
-      setPreview(currentUrl ?? null);
+      input.setCustomValidity("");
       return;
     }
-    const url = URL.createObjectURL(file);
-    objectUrl.current = url;
-    setPreview(url);
+
+    // 줄이는 동안 저장을 누르면 원본이 올라가 버리므로 잠시 막아 둔다.
+    input.setCustomValidity("사진을 준비하는 중입니다. 잠시 후 다시 눌러 주세요.");
+    setBusy(true);
+    const small = await shrinkImage(file);
+    if (ticket !== pick.current) return; // 그 사이 다른 사진을 골랐다
+    setBusy(false);
+
+    if (small.size > MAX_UPLOAD_BYTES) {
+      input.value = "";
+      input.setCustomValidity("");
+      show(null);
+      setError("사진 용량이 4MB를 넘어 올릴 수 없습니다. 다른 사진을 골라 주세요.");
+      return;
+    }
+    if (small !== file) {
+      const dt = new DataTransfer();
+      dt.items.add(small);
+      input.files = dt.files;
+      show(small);
+    }
+    input.setCustomValidity("");
   }
 
   const rounded = shape === "circle" ? "rounded-full" : "rounded-xl";
@@ -138,8 +170,11 @@ export function PhotoInput({
             사진 선택
           </button>
           <p className="mt-1.5 text-xs text-ink-3">
-            {hint ?? "휴대폰에서는 카메라로 바로 촬영할 수 있습니다. (최대 4MB)"}
+            {busy
+              ? "사진 크기를 줄이는 중…"
+              : (hint ?? "휴대폰에서는 카메라로 바로 촬영할 수 있습니다. 큰 사진은 자동으로 줄여서 올립니다.")}
           </p>
+          {error && <p className="mt-1.5 text-xs text-expense">{error}</p>}
           {currentUrl && (
             <label className="mt-1.5 flex items-center gap-1.5 text-xs text-ink-2">
               <input type="checkbox" name={`${name}_remove`} value="1" /> 기존 사진 삭제

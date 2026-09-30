@@ -3,12 +3,10 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { IconCamera } from "@/components/icons";
+import { MAX_UPLOAD_BYTES, shrinkImage } from "@/lib/shrink-image";
 import { addHistoryPhoto } from "../actions";
 
 type Picked = { file: File; url: string; caption: string };
-
-// upload.ts 의 MAX_BYTES, next.config.ts 의 bodySizeLimit 과 맞춘 값.
-const MAX_PHOTO_BYTES = 4 * 1024 * 1024;
 
 /**
  * 서버 액션 크기 제한을 넘기면 Next.js 가 영어 원문 오류를 그대로 던진다.
@@ -17,7 +15,7 @@ const MAX_PHOTO_BYTES = 4 * 1024 * 1024;
 function friendlyUploadError(e: unknown): string {
   const message = e instanceof Error ? e.message : "";
   if (/body exceeded|body size|413/i.test(message)) {
-    return "사진 용량이 너무 큽니다. 4MB 이하로 줄여서 다시 시도해 주세요.";
+    return "사진 용량이 너무 큽니다. 다른 사진으로 다시 시도해 주세요.";
   }
   return message || "저장하지 못했습니다.";
 }
@@ -41,6 +39,7 @@ export function HistoryPhotoUploader({
   const objectUrls = useRef<string[]>([]);
   const [picked, setPicked] = useState<Picked[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [preparing, setPreparing] = useState(false);
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
 
@@ -50,18 +49,26 @@ export function HistoryPhotoUploader({
     };
   }, []);
 
-  function onChoose(e: React.ChangeEvent<HTMLInputElement>) {
+  async function onChoose(e: React.ChangeEvent<HTMLInputElement>) {
     for (const u of objectUrls.current) URL.revokeObjectURL(u);
     objectUrls.current = [];
     setError(null);
+    setPicked([]);
 
     const chosen = Array.from(e.target.files ?? []).slice(0, remaining);
-    const files = chosen.filter((f) => f.size <= MAX_PHOTO_BYTES);
-    const skipped = chosen.length - files.length;
+    e.target.value = "";
+    if (chosen.length === 0) return;
+
+    // 큰 사진은 올리기 전에 줄인다. 줄여도 한도를 넘는 사진만 뺀다.
+    setPreparing(true);
+    const shrunk: File[] = [];
+    for (const f of chosen) shrunk.push(await shrinkImage(f));
+    setPreparing(false);
+
+    const files = shrunk.filter((f) => f.size <= MAX_UPLOAD_BYTES);
+    const skipped = shrunk.length - files.length;
     if (skipped > 0) {
-      setError(
-        `${skipped}장은 용량이 4MB를 넘어 빠졌습니다. 사진 크기를 줄여서 다시 선택해 주세요.`,
-      );
+      setError(`${skipped}장은 용량이 4MB를 넘어 빠졌습니다. 다른 사진을 골라 주세요.`);
     }
 
     setPicked(
@@ -118,19 +125,23 @@ export function HistoryPhotoUploader({
         multiple
         onChange={onChoose}
         className="sr-only"
-        disabled={uploading}
+        disabled={uploading || preparing}
       />
       <button
         type="button"
         className="btn btn-ghost"
         onClick={() => inputRef.current?.click()}
-        disabled={uploading}
+        disabled={uploading || preparing}
       >
         <IconCamera width={16} height={16} />
-        {picked.length > 0 ? `${picked.length}장 선택됨 · 다시 고르기` : "사진 추가"}
+        {preparing
+          ? "사진 준비 중…"
+          : picked.length > 0
+            ? `${picked.length}장 선택됨 · 다시 고르기`
+            : "사진 추가"}
       </button>
       <p className="mt-1.5 text-xs text-ink-3">
-        최대 {remaining}장 더 추가할 수 있습니다. 한 장씩 순서대로 올라갑니다. (장당 4MB 이하)
+        최대 {remaining}장 더 추가할 수 있습니다. 큰 사진은 자동으로 줄여서 한 장씩 올립니다.
       </p>
 
       {picked.length > 0 && (

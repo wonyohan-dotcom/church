@@ -1,5 +1,18 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "regions": ["hnd1"],
-  "framework": "nextjs"
+  "regions": [
+    "hnd1"
+  ],
+  "framework": "nextjs",
+  "buildCommand": "node scripts/vercel-build.mjs",
+  "crons": [
+    {
+      "path": "/api/keepalive?at=morning",
+      "schedule": "0 0 * * *"
+    },
+    {
+      "path": "/api/keepalive?at=evening",
+      "schedule": "0 12 * * *"
+    }
+  ]
 }

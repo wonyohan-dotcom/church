@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // 아이폰 앱 포장(Capacitor). 웹 앱 코드가 아니다.
+    "mobile/**",
   ]),
 ]);
 

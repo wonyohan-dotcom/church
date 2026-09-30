@@ -19,6 +19,7 @@
     "db:reset": "prisma migrate reset",
     "db:studio": "prisma studio",
     "typecheck": "tsc --noEmit",
+    "test": "tsx --test src/lib/*.test.ts",
     "db:deploy": "prisma migrate deploy"
   },
   "dependencies": {

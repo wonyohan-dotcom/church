@@ -7,6 +7,7 @@ import { hashPassword, requireStaff } from "@/lib/auth";
 import { logAudit } from "@/lib/church";
 import { deleteImage, saveImage } from "@/lib/upload";
 import { parseDate, str } from "@/lib/format";
+import { ownDistrictId, ownHouseholdId } from "@/lib/tenant";
 
 /** 그 교회 안에서 비어 있지 않은 다음 교적번호를 만든다. (예: 0001, 0002 …) */
 async function nextMemberCode(churchId: string): Promise<string> {
@@ -21,7 +22,16 @@ async function nextMemberCode(churchId: string): Promise<string> {
   return String(next).padStart(4, "0");
 }
 
-function readMemberForm(formData: FormData) {
+async function readMemberForm(churchId: string, formData: FormData) {
+  const data = readMemberFields(formData);
+  return {
+    ...data,
+    householdId: await ownHouseholdId(churchId, data.householdId),
+    districtId: await ownDistrictId(churchId, data.districtId),
+  };
+}
+
+function readMemberFields(formData: FormData) {
   return {
     name: str(formData.get("name")) ?? "",
     nameHanja: str(formData.get("nameHanja")),
@@ -53,7 +63,7 @@ function readMemberForm(formData: FormData) {
 
 export async function createMember(formData: FormData) {
   const user = await requireStaff();
-  const data = readMemberForm(formData);
+  const data = await readMemberForm(user.churchId, formData);
 
   if (!data.name) redirect("/members/new?error=name");
 
@@ -83,7 +93,7 @@ export async function createMember(formData: FormData) {
 
 export async function updateMember(id: string, formData: FormData) {
   const user = await requireStaff();
-  const data = readMemberForm(formData);
+  const data = await readMemberForm(user.churchId, formData);
 
   if (!data.name) redirect(`/members/${id}/edit?error=name`);
 
@@ -266,7 +276,7 @@ export async function createHousehold(formData: FormData) {
     data: {
       churchId: user.churchId,
       name,
-      districtId: str(formData.get("districtId")),
+      districtId: await ownDistrictId(user.churchId, str(formData.get("districtId"))),
       postalCode: str(formData.get("postalCode")),
       address: str(formData.get("address")),
       addressDetail: str(formData.get("addressDetail")),

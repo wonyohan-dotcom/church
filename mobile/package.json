@@ -1,0 +1,16 @@
+{
+  "name": "church-ios",
+  "private": true,
+  "description": "심플한교회관리 아이폰 앱 (Capacitor). 실제 화면은 배포된 웹 주소를 그대로 띄운다.",
+  "scripts": {
+    "sync": "cap sync ios",
+    "open": "cap open ios"
+  },
+  "dependencies": {
+    "@capacitor/core": "^8.5.2",
+    "@capacitor/ios": "^8.5.2"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^8.5.2"
+  }
+}

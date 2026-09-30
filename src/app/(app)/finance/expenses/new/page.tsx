@@ -3,6 +3,8 @@ import { requireFinance } from "@/lib/auth";
 import { Alert, PageHeader } from "@/components/ui";
 import { ExpenseForm } from "../expense-form";
 import { createExpense } from "../../actions";
+import { pendingAlert } from "@/lib/bank";
+import { ymdDash } from "@/lib/format";
 
 export const metadata = { title: "지출 입력" };
 
@@ -14,10 +16,12 @@ const ERRORS: Record<string, string> = {
 export default async function NewExpensePage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; bank?: string }>;
 }) {
   const staff = await requireFinance();
-  const { error } = await searchParams;
+  const { error, bank } = await searchParams;
+  // 입출금 알림함에서 "자세히 입력" 으로 넘어온 경우
+  const alert = await pendingAlert(staff.churchId, bank, "OUT");
 
   const accounts = await prisma.account.findMany({
     where: { churchId: staff.churchId, type: "EXPENSE", active: true },
@@ -29,7 +33,11 @@ export default async function NewExpensePage({
       <PageHeader
         title="지출 입력"
         description="영수증 사진을 함께 올려 두면 결산과 감사 때 근거자료로 쓸 수 있습니다."
-        back={{ href: "/finance/expenses", label: "지출 내역" }}
+        back={
+          alert
+            ? { href: "/finance/bank", label: "입출금 알림함" }
+            : { href: "/finance/expenses", label: "지출 내역" }
+        }
       />
 
       {error && (
@@ -38,7 +46,21 @@ export default async function NewExpensePage({
         </div>
       )}
 
-      <ExpenseForm action={createExpense} accounts={accounts} submitLabel="저장하기" />
+      <ExpenseForm
+        action={createExpense}
+        accounts={accounts}
+        submitLabel="저장하기"
+        bank={
+          alert
+            ? {
+                id: alert.id,
+                date: ymdDash(alert.occurredAt),
+                amount: alert.amount,
+                payee: alert.counterparty,
+              }
+            : null
+        }
+      />
     </>
   );
 }

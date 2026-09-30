@@ -7,6 +7,14 @@ import { requireFinance } from "@/lib/auth";
 import { logAudit } from "@/lib/church";
 import { deleteImage, saveImage } from "@/lib/upload";
 import { parseDate, parseIntOr, str, won } from "@/lib/format";
+import { ownAccountId, ownMemberId } from "@/lib/tenant";
+import { linkAlert, unlinkAlert } from "@/lib/bank";
+
+/** 입출금 알림함에서 넘어온 입력이면 에러 화면에서도 알림을 이어서 보여준다. */
+function bankQuery(formData: FormData) {
+  const id = str(formData.get("bankAlertId"));
+  return id ? `&bank=${encodeURIComponent(id)}` : "";
+}
 
 /* ── 헌금(수입) ──────────────────────────── */
 
@@ -15,10 +23,11 @@ export async function createOffering(formData: FormData) {
 
   const date = parseDate(formData.get("date"));
   const amount = parseIntOr(formData.get("amount"));
-  const accountId = str(formData.get("accountId"));
+  const accountId = await ownAccountId(user.churchId, str(formData.get("accountId")), "INCOME");
+  const memberId = await ownMemberId(user.churchId, str(formData.get("memberId")));
 
   if (!date || amount <= 0 || !accountId) {
-    redirect("/finance/offerings/new?error=input");
+    redirect(`/finance/offerings/new?error=input${bankQuery(formData)}`);
   }
 
   const offering = await prisma.offering.create({
@@ -27,7 +36,7 @@ export async function createOffering(formData: FormData) {
       date,
       amount,
       accountId,
-      memberId: str(formData.get("memberId")),
+      memberId,
       donorName: str(formData.get("donorName")),
       method: str(formData.get("method")) ?? "CASH",
       note: str(formData.get("note")),
@@ -48,6 +57,13 @@ export async function createOffering(formData: FormData) {
   revalidatePath("/finance");
   revalidatePath("/finance/offerings");
 
+  const bankAlertId = str(formData.get("bankAlertId"));
+  if (bankAlertId) {
+    await linkAlert(user.churchId, bankAlertId, { offeringId: offering.id });
+    revalidatePath("/finance/bank");
+    redirect("/finance/bank?ok=recorded");
+  }
+
   // '계속 입력'을 누르면 같은 날짜·과목으로 폼을 다시 열어 준다.
   if (formData.get("again") === "1") {
     redirect(
@@ -65,7 +81,8 @@ export async function updateOffering(id: string, formData: FormData) {
 
   const date = parseDate(formData.get("date"));
   const amount = parseIntOr(formData.get("amount"));
-  const accountId = str(formData.get("accountId"));
+  const accountId = await ownAccountId(user.churchId, str(formData.get("accountId")), "INCOME");
+  const memberId = await ownMemberId(user.churchId, str(formData.get("memberId")));
 
   if (!date || amount <= 0 || !accountId) {
     redirect(`/finance/offerings/${id}?error=input`);
@@ -77,7 +94,7 @@ export async function updateOffering(id: string, formData: FormData) {
       date,
       amount,
       accountId,
-      memberId: str(formData.get("memberId")),
+      memberId,
       donorName: str(formData.get("donorName")),
       method: str(formData.get("method")) ?? "CASH",
       note: str(formData.get("note")),
@@ -107,6 +124,7 @@ export async function deleteOffering(id: string) {
   });
   if (!offering || offering.churchId !== user.churchId) redirect("/finance/offerings");
 
+  await unlinkAlert({ offeringId: id });
   await prisma.offering.delete({ where: { id } });
 
   await logAudit({
@@ -130,17 +148,17 @@ export async function createExpense(formData: FormData) {
 
   const date = parseDate(formData.get("date"));
   const amount = parseIntOr(formData.get("amount"));
-  const accountId = str(formData.get("accountId"));
+  const accountId = await ownAccountId(user.churchId, str(formData.get("accountId")), "EXPENSE");
 
   if (!date || amount <= 0 || !accountId) {
-    redirect("/finance/expenses/new?error=input");
+    redirect(`/finance/expenses/new?error=input${bankQuery(formData)}`);
   }
 
   let receiptUrl: string | null = null;
   try {
     receiptUrl = await saveImage(formData.get("receipt"), "receipts");
   } catch {
-    redirect("/finance/expenses/new?error=receipt");
+    redirect(`/finance/expenses/new?error=receipt${bankQuery(formData)}`);
   }
 
   const expense = await prisma.expense.create({
@@ -170,6 +188,13 @@ export async function createExpense(formData: FormData) {
 
   revalidatePath("/finance");
   revalidatePath("/finance/expenses");
+
+  const bankAlertId = str(formData.get("bankAlertId"));
+  if (bankAlertId) {
+    await linkAlert(user.churchId, bankAlertId, { expenseId: expense.id });
+    revalidatePath("/finance/bank");
+    redirect("/finance/bank?ok=recorded");
+  }
   redirect("/finance/expenses?ok=created");
 }
 
@@ -181,7 +206,7 @@ export async function updateExpense(id: string, formData: FormData) {
 
   const date = parseDate(formData.get("date"));
   const amount = parseIntOr(formData.get("amount"));
-  const accountId = str(formData.get("accountId"));
+  const accountId = await ownAccountId(user.churchId, str(formData.get("accountId")), "EXPENSE");
 
   if (!date || amount <= 0 || !accountId) {
     redirect(`/finance/expenses/${id}?error=input`);
@@ -241,6 +266,7 @@ export async function deleteExpense(id: string) {
   });
   if (!expense || expense.churchId !== user.churchId) redirect("/finance/expenses");
 
+  await unlinkAlert({ expenseId: id });
   await prisma.expense.delete({ where: { id } });
   await deleteImage(expense.receiptUrl);
 

@@ -429,7 +429,7 @@ async function main() {
       SUPABASE_URL: supabaseUrl,
       SUPABASE_SERVICE_ROLE_KEY: serviceKey,
       SUPABASE_BUCKET: BUCKET,
-      TZ: "Asia/Seoul",
+      // TZ 는 Vercel 이 막아 둔 이름이라 넣으면 배포가 멈춘다. src/instrumentation.ts 가 맞춘다.
       VAPID_PUBLIC_KEY: vapid?.publicKey,
       VAPID_PRIVATE_KEY: vapid?.privateKey,
       VAPID_SUBJECT: vapid ? "mailto:admin@example.com" : undefined,

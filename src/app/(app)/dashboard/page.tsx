@@ -42,6 +42,7 @@ export default async function DashboardPage({
     pendingReceipts,
     pendingSignups,
     recentHistory,
+    pendingBank,
   ] = await Promise.all([
     getChurch(staff.churchId),
     getYearSummary(staff.churchId, year),
@@ -75,6 +76,9 @@ export default async function DashboardPage({
       orderBy: { date: "desc" },
       take: 4,
     }),
+    canManageFinance(staff.role)
+      ? prisma.bankAlert.count({ where: { churchId: staff.churchId, status: "PENDING" } })
+      : Promise.resolve(0),
   ]);
 
   const totalIncomeSum = totalIncome._sum.amount ?? 0;
@@ -157,6 +161,17 @@ export default async function DashboardPage({
             승인을 기다리는 가입 신청이 {pendingSignups}건 있습니다.{" "}
             <Link href="/settings" className="font-bold underline">
               확인하고 권한 정해 주기
+            </Link>
+          </Alert>
+        </div>
+      )}
+
+      {pendingBank > 0 && (
+        <div className="mb-5">
+          <Alert tone="primary">
+            은행 입출금 알림 {pendingBank}건이 기록을 기다리고 있습니다.{" "}
+            <Link href="/finance/bank" className="font-bold underline">
+              알림함 열기
             </Link>
           </Alert>
         </div>

@@ -16,16 +16,20 @@ export function ExpenseForm({
   expense,
   submitLabel,
   deleteAction,
+  bank,
 }: {
   action: (formData: FormData) => void | Promise<void>;
   accounts: AccountModel[];
   expense?: ExpenseModel | null;
   submitLabel: string;
   deleteAction?: (formData: FormData) => void | Promise<void>;
+  /** 입출금 알림함에서 넘어온 경우: 알림 내용으로 칸을 채우고, 저장하면 알림과 연결한다. */
+  bank?: { id: string; date: string; amount: number; payee: string | null } | null;
 }) {
   return (
     <div className="space-y-5">
       <form action={action} className="space-y-5">
+        {bank && <input type="hidden" name="bankAlertId" value={bank.id} />}
         <Card>
           <CardTitle>지출 내용</CardTitle>
           <div className="space-y-4">
@@ -36,7 +40,7 @@ export function ExpenseForm({
                   name="date"
                   className="field"
                   required
-                  defaultValue={ymdDash(expense?.date) || ymdDash(new Date())}
+                  defaultValue={ymdDash(expense?.date) || bank?.date || ymdDash(new Date())}
                 />
               </Field>
               <Field label="지출 항목" required>
@@ -60,9 +64,9 @@ export function ExpenseForm({
             <Field label="금액" required>
               <AmountInput
                 name="amount"
-                defaultValue={expense?.amount ?? null}
+                defaultValue={expense?.amount ?? bank?.amount ?? null}
                 required
-                autoFocus={!expense}
+                autoFocus={!expense && !bank}
               />
             </Field>
 
@@ -72,7 +76,7 @@ export function ExpenseForm({
                   name="payee"
                   className="field"
                   placeholder="예) ○○문구, 한국전력"
-                  defaultValue={expense?.payee ?? ""}
+                  defaultValue={expense?.payee ?? bank?.payee ?? ""}
                 />
               </Field>
               <Field label="지급 방법">
@@ -121,7 +125,7 @@ export function ExpenseForm({
         </Card>
 
         <div className="flex items-center justify-end gap-2 pb-2">
-          <Link href="/finance/expenses" className="btn btn-ghost">
+          <Link href={bank ? "/finance/bank" : "/finance/expenses"} className="btn btn-ghost">
             취소
           </Link>
           <SubmitButton>{submitLabel}</SubmitButton>
