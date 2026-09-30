@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth";
 import { getChurch } from "@/lib/church";
@@ -187,6 +188,31 @@ export default async function SettingsPage({
             ))}
           </ul>
         )}
+      </Card>
+
+      {/* ── 헌금자 이름 연결 ── */}
+      <Card className="mb-5">
+        <CardTitle>헌금자 이름 연결</CardTitle>
+        <p className="mb-3 text-sm leading-relaxed text-ink-3">
+          통장·엑셀에 <b className="font-semibold text-ink-2">‘지성’, ‘범준지성’</b>처럼 적힌 헌금을 찾아{" "}
+          <b className="font-semibold text-ink-2">홍지성</b> 교인과 이어 줍니다. 교인 이름이나 적힌 이름으로 찾아보세요.
+        </p>
+        <form action="/finance/offerings/link" method="get" className="flex gap-2">
+          <input
+            name="q"
+            type="search"
+            required
+            placeholder="예) 홍지성, 지성, 범준"
+            className="field min-w-0 flex-1"
+            enterKeyHint="search"
+          />
+          <button type="submit" className="btn btn-primary shrink-0">
+            찾기
+          </button>
+        </form>
+        <Link href="/finance/offerings/link" className="mt-3 inline-block text-sm font-semibold text-primary">
+          이름으로 자동으로 찾은 헌금 모두 보기 →
+        </Link>
       </Card>
 
       {/* ── 알림 ── */}

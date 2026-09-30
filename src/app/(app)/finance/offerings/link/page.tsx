@@ -1,6 +1,9 @@
 import Link from "next/link";
 import { requireFinance } from "@/lib/auth";
-import { findLinkable } from "@/lib/offering-givers";
+import { findLinkable, searchByWrittenName } from "@/lib/offering-givers";
+import { prisma } from "@/lib/prisma";
+import { GiverPickerProvider } from "@/components/giver-picker";
+import { NameGroups } from "./name-groups";
 import { won } from "@/lib/format";
 import { Alert, Badge, Card, EmptyState, PageHeader } from "@/components/ui";
 import { SubmitButton } from "@/components/form";
@@ -12,12 +15,76 @@ export const metadata = { title: "이름으로 헌금자 연결" };
 export default async function LinkOfferingsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ ok?: string }>;
+  searchParams: Promise<{ ok?: string; q?: string }>;
 }) {
   const staff = await requireFinance();
   const sp = await searchParams;
-  const groups = await findLinkable(staff.churchId);
+  const q = (sp.q ?? "").trim();
+  const [groups, found, members] = await Promise.all([
+    q ? Promise.resolve([]) : findLinkable(staff.churchId),
+    q ? searchByWrittenName(staff.churchId, q) : Promise.resolve([]),
+    q
+      ? prisma.member.findMany({
+          where: { churchId: staff.churchId },
+          select: { id: true, name: true, position: true, status: true, district: { select: { name: true } } },
+          orderBy: [{ status: "asc" }, { name: "asc" }],
+        })
+      : Promise.resolve([]),
+  ]);
   const count = groups.reduce((s, g) => s + g.offeringIds.length, 0);
+
+  const searchBox = (
+    <form method="get" className="card mb-5 flex gap-2 p-3">
+      <input
+        name="q"
+        type="search"
+        defaultValue={q}
+        required
+        placeholder="교인 이름이나 적힌 이름 (예: 홍지성, 지성)"
+        className="field min-w-0 flex-1"
+        enterKeyHint="search"
+      />
+      <button type="submit" className="btn btn-primary shrink-0">
+        찾기
+      </button>
+    </form>
+  );
+
+  if (q) {
+    return (
+      <GiverPickerProvider
+        members={members.map((m) => ({
+          id: m.id,
+          name: m.name,
+          sub: [m.position, m.district?.name, m.status !== "ACTIVE" ? "(비활동)" : null].filter(Boolean).join(" · "),
+        }))}
+      >
+        <PageHeader
+          title="이름으로 헌금자 연결"
+          description="적힌 이름마다 교인을 골라 한 번에 잇습니다. 두 분을 고르면 두 분 모두의 헌금으로 보입니다."
+          back={{ href: "/finance/offerings/link", label: "자동으로 찾은 헌금" }}
+        />
+        {searchBox}
+        {found.length === 0 ? (
+          <Card>
+            <EmptyState
+              icon={<IconUsers />}
+              title={`‘${q}’ 이(가) 들어간 적힌 이름이 없습니다`}
+              description="다른 글자로 찾아보세요. 교인 이름(예: 홍지성)으로 찾으면 성을 뺀 이름(지성)도 함께 찾습니다."
+            />
+          </Card>
+        ) : (
+          <>
+            <p className="mb-2 px-1 text-sm text-ink-2">
+              ‘{q}’ 이(가) 들어간 적힌 이름 <b>{found.length}가지</b> · 헌금{" "}
+              {found.reduce((s, g) => s + g.offeringIds.length, 0)}건
+            </p>
+            <NameGroups groups={found} />
+          </>
+        )}
+      </GiverPickerProvider>
+    );
+  }
 
   return (
     <>
@@ -26,6 +93,7 @@ export default async function LinkOfferingsPage({
         description="통장·엑셀에 적힌 이름 속에서 교인을 찾아 헌금을 이어 줍니다. 두 분 이름이 함께 적힌 헌금은 두 분 모두에게 보입니다."
         back={{ href: "/finance/offerings", label: "헌금 내역" }}
       />
+      {searchBox}
 
       {sp.ok !== undefined && (
         <div className="mb-5">

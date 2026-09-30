@@ -132,3 +132,74 @@ export async function autoLinkGivers(
   const ids = matchGivers(donorName, await churchMembers(churchId));
   if (ids.length) await setGivers(churchId, offeringId, ids, { confirmed: false });
 }
+
+export type NameSearchGroup = {
+  donorName: string;
+  offeringIds: string[];
+  total: number;
+  current: { id: string; name: string }[];
+  mixed: boolean;
+  linkedCount: number;
+  suggested: { id: string; name: string }[];
+};
+
+/**
+ * 적힌 이름(통장 입금자명·엑셀 이름)에 검색어가 들어간 헌금을 이름별로 묶는다.
+ * 교인 이름으로 찾으면(예: 홍지성) 성을 뺀 이름(지성)으로 적힌 헌금도 함께 찾는다.
+ */
+export async function searchByWrittenName(churchId: string, q: string): Promise<NameSearchGroup[]> {
+  const term = q.replace(/\s/g, "").slice(0, 20);
+  if (!term) return [];
+  const members = await churchMembers(churchId);
+  const byId = new Map(members.map((m) => [m.id, m.name]));
+  const searched = members.filter((m) => m.name.replace(/\s/g, "") === term);
+  const terms = new Set([term]);
+  if (searched.length === 1 && /^[가-힣]{3}$/.test(term)) terms.add(term.slice(1));
+
+  const offerings = await prisma.offering.findMany({
+    where: {
+      churchId,
+      OR: [...terms].map((t) => ({ donorName: { contains: t, mode: "insensitive" as const } })),
+    },
+    select: {
+      id: true,
+      amount: true,
+      donorName: true,
+      memberId: true,
+      account: { select: { name: true } },
+      coGivers: { select: { memberId: true } },
+    },
+    take: 3000,
+  });
+
+  const groups = new Map<string, { ids: string[]; total: number; givers: string[] }>();
+  for (const o of offerings) {
+    if (!o.donorName || !canLinkGivers(o.account.name)) continue;
+    const g = groups.get(o.donorName) ?? { ids: [], total: 0, givers: [] };
+    g.ids.push(o.id);
+    g.total += o.amount;
+    g.givers.push([o.memberId, ...o.coGivers.map((c) => c.memberId)].filter(Boolean).join(","));
+    groups.set(o.donorName, g);
+  }
+
+  const named = (ids: string[]) => ids.map((id) => ({ id, name: byId.get(id) ?? "?" }));
+  return [...groups.entries()]
+    .map(([donorName, g]) => {
+      const mixed = new Set(g.givers).size > 1;
+      const current = !mixed && g.givers[0] ? named(g.givers[0].split(",")) : [];
+      let suggested = matchGivers(donorName, members);
+      // "지성" 처럼 이름 한 단어만 적혔어도, 그 교인을 찾아 들어왔다면 그 교인을 추천한다.
+      if (!suggested.length && searched.length === 1) suggested = [searched[0].id];
+      return {
+        donorName,
+        offeringIds: g.ids,
+        total: g.total,
+        current,
+        mixed,
+        linkedCount: g.givers.filter(Boolean).length,
+        suggested: named(suggested),
+      };
+    })
+    .sort((a, b) => Number(a.linkedCount === a.offeringIds.length) - Number(b.linkedCount === b.offeringIds.length) || b.offeringIds.length - a.offeringIds.length)
+    .slice(0, 100);
+}
