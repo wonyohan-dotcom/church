@@ -13,13 +13,13 @@ import {
   TemplateButton,
   sendInChunks,
 } from "@/components/import-parts";
-import { importFinance } from "./actions";
+import { clearFinance, importFinance } from "./actions";
 
 const TEMPLATE = [
-  ["날짜", "구분", "항목", "금액", "이름", "거래처", "적요", "방법"],
-  ["2026-01-04", "수입", "주일헌금", 50000, "홍길동", "", "", "현금"],
-  ["2026-01-04", "수입", "십일조", 300000, "김은혜", "", "", "계좌이체"],
-  ["2026-01-05", "지출", "공과금", 123450, "", "한국전력", "1월 전기요금", "계좌이체"],
+  ["날짜", "구분", "항목", "대분류", "금액", "이름", "거래처", "적요", "방법"],
+  ["2026-01-04", "수입", "주일헌금", "헌금", 50000, "홍길동", "", "", "현금"],
+  ["2026-01-04", "수입", "십일조", "헌금", 300000, "김은혜", "", "", "계좌이체"],
+  ["2026-01-05", "지출", "공과금", "운영비", 123450, "", "한국전력", "1월 전기요금", "계좌이체"],
 ];
 
 type Sheet = { name: string; rows: Cell[][] };
@@ -27,10 +27,16 @@ type Sheet = { name: string; rows: Cell[][] };
 export function FinanceImporter({
   accounts,
   memberNames,
+  isAdmin,
+  existing,
 }: {
   accounts: { name: string; type: "INCOME" | "EXPENSE" }[];
   memberNames: string[];
+  /** 관리자만 기존 기록을 지우고 새로 채울 수 있다. */
+  isAdmin: boolean;
+  existing: { offerings: number; expenses: number };
 }) {
+  const [replace, setReplace] = useState(false);
   const [fileName, setFileName] = useState<string | null>(null);
   const [sheets, setSheets] = useState<Sheet[]>([]);
   const [sheetIndex, setSheetIndex] = useState(0);
@@ -42,6 +48,8 @@ export function FinanceImporter({
     created: number;
     skipped: { line: number; reason: string }[];
     newAccounts: string[];
+    cleared: { offerings: number; expenses: number } | null;
+    balance: number | null;
   } | null>(null);
 
   const parsed = useMemo(
@@ -90,15 +98,31 @@ export function FinanceImporter({
   }
 
   async function save(rows: FinanceImportRow[]) {
+    const total = existing.offerings + existing.expenses;
+    if (
+      replace &&
+      !confirm(
+        `지금 앱에 있는 수입 ${existing.offerings}건, 지출 ${existing.expenses}건을 모두 지우고 ` +
+          `이 파일의 ${rows.length}건으로 새로 채웁니다. 지운 기록은 되돌릴 수 없습니다. 계속할까요?`,
+      )
+    ) {
+      return;
+    }
     setSaving(true);
     setProgress(0);
     setError(null);
     try {
-      const r = await sendInChunks(rows, (chunk) => importFinance(chunk), setProgress);
+      const cleared = replace && total > 0 ? await clearFinance() : null;
+      // 이 시각 이후에 들어간 줄끼리는 "이미 있는 기록"으로 보지 않는다(나눠 보내기 때문).
+      const since = new Date().toISOString();
+      const r = await sendInChunks(rows, (chunk) => importFinance(chunk, { since }), setProgress);
+      const sum = (d: "IN" | "OUT") => rows.filter((x) => x.direction === d).reduce((a, x) => a + x.amount, 0);
       setDone({
         created: r.created,
         skipped: [...(parsed?.skipped ?? []), ...r.skipped],
         newAccounts: [...new Set(r.extra.flatMap((x) => x.newAccounts))],
+        cleared,
+        balance: replace ? sum("IN") - sum("OUT") : null,
       });
       setSheets([]);
       setFileName(null);
@@ -115,6 +139,17 @@ export function FinanceImporter({
         <p className="title-serif text-xl text-ink">
           <span className="tnum">{done.created}</span>건을 장부에 입력했습니다.
         </p>
+        {done.cleared && (
+          <p className="mt-2 text-sm text-ink-2">
+            먼저 기존 수입 {done.cleared.offerings}건, 지출 {done.cleared.expenses}건을 지웠습니다.
+          </p>
+        )}
+        {done.balance !== null && (
+          <p className="mt-2 text-sm text-ink-2">
+            이 파일 기준 잔액은 <b className="tnum text-ink">{won(done.balance)}</b>입니다. 회계 화면의 현재 잔액과
+            통장 잔액이 같은지 확인해 보세요.
+          </p>
+        )}
         {done.newAccounts.length > 0 && (
           <p className="mt-2 text-sm text-ink-2">
             새로 만든 항목: {done.newAccounts.join(", ")}.{" "}
@@ -240,7 +275,10 @@ export function FinanceImporter({
                         <td className={r.direction === "IN" ? "text-income" : "text-expense"}>
                           {r.direction === "IN" ? "수입" : "지출"}
                         </td>
-                        <td>{r.account ?? (r.direction === "IN" ? "기타수입" : "기타지출")}</td>
+                        <td>
+                          {r.account ?? (r.direction === "IN" ? "기타수입" : "기타지출")}
+                          {r.category && <span className="ml-1 text-xs text-ink-3">{r.category}</span>}
+                        </td>
                         <td className="tnum whitespace-nowrap text-right font-semibold">{won(r.amount)}</td>
                         <td>{(r.direction === "IN" ? r.name : (r.payee ?? r.name)) ?? "-"}</td>
                         <td className="max-w-[14rem] truncate">{r.description ?? "-"}</td>
@@ -253,12 +291,41 @@ export function FinanceImporter({
                 <p className="mt-2 text-xs text-ink-3">처음 30줄만 보여 드립니다. 저장하면 {parsed.rows.length}줄 모두 들어갑니다.</p>
               )}
               <SkippedList items={parsed.skipped} />
+              {isAdmin && existing.offerings + existing.expenses > 0 && (
+                <label
+                  className={`mt-4 flex items-start gap-2.5 rounded-xl border p-3 text-sm ${replace ? "border-expense bg-expense-soft text-expense" : "border-line text-ink-2"}`}
+                >
+                  <input
+                    type="checkbox"
+                    className="mt-0.5"
+                    checked={replace}
+                    onChange={(e) => setReplace(e.target.checked)}
+                  />
+                  <span>
+                    <b>기존 수입 {existing.offerings}건 · 지출 {existing.expenses}건을 모두 지우고 이 파일로 새로 채우기</b>
+                    <br />
+                    <span className="text-xs">
+                      통장 거래내역 전체를 새로 받았을 때 씁니다. 이미 발급한 기부금영수증은 그대로 남습니다. 지운 기록은
+                      되돌릴 수 없습니다.
+                    </span>
+                  </span>
+                </label>
+              )}
               <p className="mt-4 text-xs text-ink-3">
                 같은 날짜·금액·항목·이름의 기록이 이미 있으면 건너뜁니다. 같은 파일을 두 번 올려도 두 번 입력되지 않습니다.
               </p>
               <div className="mt-4 flex justify-end">
-                <button type="button" className="btn btn-primary" disabled={saving} onClick={() => save(parsed.rows)}>
-                  {saving ? `저장 중… (${progress}/${parsed.rows.length})` : `${parsed.rows.length}건 장부에 입력하기`}
+                <button
+                  type="button"
+                  className={replace ? "btn btn-danger" : "btn btn-primary"}
+                  disabled={saving}
+                  onClick={() => save(parsed.rows)}
+                >
+                  {saving
+                    ? `저장 중… (${progress}/${parsed.rows.length})`
+                    : replace
+                      ? `지우고 ${parsed.rows.length}건으로 새로 채우기`
+                      : `${parsed.rows.length}건 장부에 입력하기`}
                 </button>
               </div>
             </>

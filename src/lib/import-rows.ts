@@ -49,9 +49,11 @@ export const FINANCE_FIELDS = {
   income: ["수입", "수입금액", "입금", "입금액", "헌금액"],
   expense: ["지출", "지출금액", "출금", "출금액", "사용금액"],
   account: ["항목", "계정", "계정과목", "과목", "헌금종류", "헌금항목", "지출항목", "분류", "세목"],
-  name: ["이름", "성명", "헌금자", "헌금인", "교인", "보낸분", "입금자"],
+  /** 항목을 묶는 큰 분류(헌금, 운영비, 사역비 …). 새 항목을 만들 때 그 분류로 넣는다. */
+  category: ["대분류", "계정분류", "관"],
+  name: ["이름", "성명", "헌금자", "헌금인", "교인", "보낸분", "보내는분", "입금자", "입금자명"],
   payee: ["거래처", "지급처", "사용처", "받는분", "상호"],
-  description: ["적요", "내용", "내역", "사용내역", "비고", "메모"],
+  description: ["적요", "거래내용", "내용", "내역", "사용내역", "비고", "메모"],
   method: ["방법", "결제방법", "납부방법", "수단"],
 } satisfies FieldSpec<string>;
 export type FinanceField = keyof typeof FINANCE_FIELDS;
@@ -295,6 +297,7 @@ export type FinanceImportRow = {
   direction: "IN" | "OUT";
   amount: number;
   account: string | null;
+  category: string | null;
   name: string | null;
   payee: string | null;
   description: string | null;
@@ -339,6 +342,7 @@ export function parseFinanceSheet(
       line,
       date,
       account,
+      category: toText(col(row, "category")),
       name: toText(col(row, "name")),
       payee: toText(col(row, "payee")),
       description: toText(col(row, "description")),
@@ -407,6 +411,7 @@ export const FIELD_LABELS: Record<MemberField | FinanceField, string> = {
   income: "수입",
   expense: "지출",
   account: "항목",
+  category: "대분류",
   payee: "거래처",
   description: "적요",
   method: "방법",

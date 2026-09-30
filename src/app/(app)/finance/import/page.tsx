@@ -7,12 +7,14 @@ export const metadata = { title: "엑셀로 수입·지출 입력" };
 
 export default async function FinanceImportPage() {
   const staff = await requireFinance();
-  const [accounts, members] = await Promise.all([
+  const [accounts, members, offerings, expenses] = await Promise.all([
     prisma.account.findMany({
       where: { churchId: staff.churchId },
       select: { name: true, type: true },
     }),
     prisma.member.findMany({ where: { churchId: staff.churchId }, select: { name: true } }),
+    prisma.offering.count({ where: { churchId: staff.churchId } }),
+    prisma.expense.count({ where: { churchId: staff.churchId } }),
   ]);
   return (
     <>
@@ -25,6 +27,8 @@ export default async function FinanceImportPage() {
       <FinanceImporter
         accounts={accounts.map((a) => ({ name: a.name, type: a.type === "EXPENSE" ? "EXPENSE" : "INCOME" }))}
         memberNames={members.map((m) => m.name)}
+        isAdmin={staff.role === "ADMIN"}
+        existing={{ offerings, expenses }}
       />
     </>
   );
