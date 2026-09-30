@@ -1,0 +1,39 @@
+# App Store 에 앱 정보(설명·스크린샷·연령 등급·심사 정보)를 채우고, 원하면 심사에 제출한다.
+#
+# Actions 탭 → 'App Store 정보 채우기 · 심사 제출' → Run workflow
+#   submit 을 켜면 채운 뒤 바로 심사에 제출한다.
+# 설명과 스크린샷은 mobile/store/ 폴더에 있다. 빌드는 '아이폰 앱 올리기 (TestFlight)' 가 올린 최신 빌드를 쓴다.
+#
+# 비밀값: ASC_KEY_ID, ASC_ISSUER_ID, ASC_KEY_P8 (TestFlight 와 같은 키),
+#         APP_REVIEW_PHONE (심사팀 연락용 전화번호, 애플에만 전달된다)
+name: App Store 정보 채우기 · 심사 제출
+
+on:
+  workflow_dispatch:
+    inputs:
+      submit:
+        description: "채운 뒤 심사에 제출"
+        type: boolean
+        default: false
+
+concurrency:
+  group: app-store
+  cancel-in-progress: false
+
+jobs:
+  store:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: App Store Connect 에 정보 채우기
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+          APP_REVIEW_PHONE: ${{ secrets.APP_REVIEW_PHONE }}
+          SUBMIT: ${{ inputs.submit && '1' || '0' }}
+        run: node mobile/store/submit.mjs

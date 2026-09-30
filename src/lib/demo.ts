@@ -1,6 +1,7 @@
 import { prisma } from "./prisma";
 import { hashPassword } from "./auth";
 import { DEFAULT_ACCOUNTS } from "./constants";
+import { newBankToken } from "./bank";
 
 /**
  * 체험용 교회
@@ -63,7 +64,8 @@ export async function resetDemo(now = new Date()) {
         sealUrl: null,
         receiptAutoIssue: true,
         joinOpen: false,
-        bankToken: null,
+        // 알림함이 '휴대폰과 연결되지 않았습니다' 로 보이지 않게 연결된 상태로 둔다 (체험용 주소).
+        bankToken: newBankToken(),
         bankAutoRecord: true,
         bankIncomeAccountId: null,
         isDemo: true,
@@ -205,6 +207,21 @@ export async function resetDemo(now = new Date()) {
         }
         if (w % 2 === 0) {
           offerings.push({ churchId, date, amount: int(1, 5) * 10_000, accountId: byName("주일헌금").id, method: "CASH" });
+        }
+      }
+      // 이번 달 초에도 헌금이 보이도록 최근 며칠의 계좌이체 헌금을 조금 넣는다.
+      for (let d = 0; d < 4; d++) {
+        const date = day(-d);
+        if (date.getMonth() !== now.getMonth()) break;
+        for (let k = 0; k < 3; k++) {
+          offerings.push({
+            churchId,
+            date,
+            amount: pick([30, 50, 100, 200]) * 1_000,
+            accountId: pick(giving).id,
+            memberId: pick(members).id,
+            method: "TRANSFER",
+          });
         }
       }
       await tx.offering.createMany({ data: offerings });
