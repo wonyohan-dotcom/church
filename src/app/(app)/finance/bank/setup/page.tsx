@@ -5,6 +5,7 @@ import { requireFinance } from "@/lib/auth";
 import { Alert, Card, CardTitle, Field, PageHeader } from "@/components/ui";
 import { ConfirmSubmitButton, SubmitButton } from "@/components/form";
 import { CopyButton } from "@/components/copy-button";
+import { PushToggle } from "@/components/push-toggle";
 import {
   disableBankInbox,
   enableBankInbox,
@@ -202,6 +203,15 @@ export default async function BankSetupPage({
             바로 시험해 보려면, 전에 받은 은행 문자를 복사해 알림함 아래 ‘문자 직접 붙여넣기’에 넣어
             보세요. 제대로 읽히는지 확인할 수 있습니다.
           </p>
+        </Step>
+
+        <Step n={5} title="이 휴대폰으로 알림 받기 (선택)">
+          <p>
+            입출금이 들어와 자동으로 기록되거나 확인이 필요할 때, 이 휴대폰으로 알림을 보냅니다. 아이폰은 사파리에서 이
+            사이트를 연 뒤 <b>공유 → 홈 화면에 추가</b>로 설치한 아이콘에서 켜야 합니다. (TestFlight 앱에서는 아이폰
+            정책상 이 알림이 오지 않습니다)
+          </p>
+          <PushToggle />
         </Step>
 
         <Card>

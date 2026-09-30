@@ -159,10 +159,21 @@ function findCounterparty(text: string, dealStart: number, dealEnd: number): str
     at: m.index!,
   }));
   const candidates = tokens.filter((t) => isNameLike(t.value));
-  const afterDeal = candidates.find((t) => t.at >= dealEnd);
-  if (afterDeal) return tidyName(afterDeal.value);
-  const beforeDeal = candidates.filter((t) => t.at < dealStart).pop();
-  return beforeDeal ? tidyName(beforeDeal.value) : null;
+  const pick = candidates.find((t) => t.at >= dealEnd) ?? candidates.filter((t) => t.at < dealStart).pop();
+  return pick ? tidyName(wholeLine(text, pick.at) ?? pick.value) : null;
+}
+
+/**
+ * 기업은행처럼 상대 이름이 한 줄을 통째로 차지하는 문자에서는 그 줄 전체가 이름이다.
+ * ("스타벅스 코리아", "주식회사 스타필드고") 줄의 모든 조각이 이름처럼 생겼을 때만 줄을 쓴다.
+ */
+function wholeLine(text: string, at: number): string | null {
+  const start = text.lastIndexOf("\n", at) + 1;
+  const endAt = text.indexOf("\n", at);
+  const line = text.slice(start, endAt < 0 ? undefined : endAt).trim();
+  const parts = line.split(/\s+/);
+  if (parts.length < 2 || parts.length > 5) return null;
+  return parts.every((p) => isNameLike(p) || /^[(（][^)）]*[)）]$/.test(p)) ? line : null;
 }
 
 function isNameLike(token: string): boolean {

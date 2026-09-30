@@ -23,7 +23,22 @@ export type Suggestion = {
   memberId: string | null;
   /** 제안의 근거. 화면에 짧게 보여준다. */
   reason: string | null;
+  /** 자동 기록을 켰을 때 사람 확인 없이 기록해도 될 만큼 확실한지 */
+  confident: boolean;
 };
+
+/**
+ * 지난 기록들에서 가장 많이 쓴 항목. 한 항목이 share 이상을 차지할 때만 돌려준다.
+ * (예: '스타필드고' 출금 10건 중 9건이 소모품비 → 소모품비, 반반이면 사람에게 묻는다)
+ */
+function dominant<T extends { accountId: string }>(rows: T[], share: number) {
+  if (rows.length === 0) return null;
+  const count = new Map<string, number>();
+  for (const r of rows) count.set(r.accountId, (count.get(r.accountId) ?? 0) + 1);
+  const [accountId, n] = [...count.entries()].sort((a, b) => b[1] - a[1])[0];
+  if (n / rows.length < share) return null;
+  return { accountId, ratio: n / rows.length, total: rows.length, sample: rows.find((r) => r.accountId === accountId)! };
+}
 
 type IngestResult = {
   saved: BankAlertModel[];
@@ -98,8 +113,7 @@ export async function ingestBankText(
     if (church?.bankAutoRecord) {
       const s = await suggestFor(alert);
       // 입금은 헌금 항목만 정해지면 기록한다. 출금은 전에 같은 곳에 보낸 기록이 있을 때만.
-      const confident = alert.direction === "IN" ? !!s.accountId : !!s.accountId && !!s.reason;
-      if (confident && s.accountId) {
+      if (s.confident && s.accountId) {
         await recordAlert(alert, {
           accountId: s.accountId,
           memberId: s.memberId,
@@ -132,7 +146,9 @@ export async function ingestBankText(
  */
 export async function suggestFor(alert: BankAlertModel): Promise<Suggestion> {
   const { churchId, counterparty } = alert;
+  const none: Suggestion = { accountId: null, memberId: null, reason: null, confident: false };
 
+  // 1) 알림함에서 같은 상대를 기록한 적이 있으면 그대로
   if (counterparty) {
     const previous = await prisma.bankAlert.findFirst({
       where: {
@@ -154,26 +170,72 @@ export async function suggestFor(alert: BankAlertModel): Promise<Suggestion> {
         accountId: previous.offering.accountId,
         memberId: previous.offering.memberId,
         reason: "지난번과 같은 방식",
+        confident: true,
       };
     }
     if (previous?.expense) {
-      return { accountId: previous.expense.accountId, memberId: null, reason: "지난번과 같은 항목" };
+      return { accountId: previous.expense.accountId, memberId: null, reason: "지난번과 같은 항목", confident: true };
     }
   }
 
+  // 2) 장부(엑셀로 가져온 기록 포함)에서 같은 상대의 최근 기록을 보고 판단
   if (alert.direction === "OUT") {
-    if (counterparty) {
-      const lastExpense = await prisma.expense.findFirst({
-        where: { churchId, payee: counterparty },
-        orderBy: { date: "desc" },
-        select: { accountId: true },
-      });
-      if (lastExpense) {
-        return { accountId: lastExpense.accountId, memberId: null, reason: "같은 지급처의 지난 지출" };
-      }
+    if (!counterparty) return none;
+    const past = await prisma.expense.findMany({
+      where: { churchId, payee: counterparty },
+      orderBy: { date: "desc" },
+      take: 12,
+      select: { accountId: true },
+    });
+    const top = dominant(past, 0.7);
+    if (top) {
+      return {
+        accountId: top.accountId,
+        memberId: null,
+        reason: `같은 곳 지난 지출 ${top.total}건 기준`,
+        confident: top.total >= 2 || past.length === 1,
+      };
     }
-    return { accountId: null, memberId: null, reason: null };
+    // 반반으로 갈리면 가장 최근 항목을 추천만 한다
+    return past[0]
+      ? { accountId: past[0].accountId, memberId: null, reason: "같은 곳의 최근 지출", confident: false }
+      : none;
   }
+
+  if (counterparty) {
+    const past = await prisma.offering.findMany({
+      where: { churchId, OR: [{ donorName: counterparty }, { member: { name: counterparty } }] },
+      orderBy: { date: "desc" },
+      take: 12,
+      select: { accountId: true, memberId: true },
+    });
+    const top = dominant(past, 0.7);
+    if (top) {
+      return {
+        accountId: top.accountId,
+        memberId: top.sample.memberId,
+        reason: `같은 이름 지난 입금 ${top.total}건 기준`,
+        confident: true,
+      };
+    }
+    if (past[0]) {
+      return { accountId: past[0].accountId, memberId: past[0].memberId, reason: "같은 이름의 최근 입금", confident: false };
+    }
+  }
+
+  // 3) 처음 보는 이름: 같은 금액의 최근 입금이 거의 한 항목이면 그 항목
+  //    (예: 10,000원은 대부분 바이블PT 참가비, 35,000원은 책값)
+  const sameAmount = await prisma.offering.findMany({
+    where: {
+      churchId,
+      amount: alert.amount,
+      date: { gte: new Date(alert.occurredAt.getTime() - 120 * 24 * 3600 * 1000) },
+    },
+    orderBy: { date: "desc" },
+    take: 30,
+    select: { accountId: true, memberId: true },
+  });
+  const byAmount = sameAmount.length >= 5 ? dominant(sameAmount, 0.8) : null;
 
   let memberId: string | null = null;
   if (counterparty) {
@@ -184,7 +246,16 @@ export async function suggestFor(alert: BankAlertModel): Promise<Suggestion> {
     });
     if (same.length === 1) memberId = same[0].id;
   }
+  if (byAmount) {
+    return {
+      accountId: byAmount.accountId,
+      memberId,
+      reason: `같은 금액 최근 입금 ${byAmount.total}건 기준`,
+      confident: true,
+    };
+  }
 
+  // 4) 설정해 둔 기본 헌금 항목
   const church = await prisma.church.findUnique({
     where: { id: churchId },
     select: { bankIncomeAccountId: true },
@@ -199,7 +270,8 @@ export async function suggestFor(alert: BankAlertModel): Promise<Suggestion> {
   return {
     accountId: account?.id ?? null,
     memberId,
-    reason: memberId ? "입금자와 이름이 같은 교인" : null,
+    reason: memberId ? "입금자와 이름이 같은 교인" : account ? "기본 헌금 항목" : null,
+    confident: !!account,
   };
 }
 

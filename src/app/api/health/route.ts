@@ -28,5 +28,6 @@ export async function GET() {
     SUPABASE_URL: check("SUPABASE_URL"),
     SUPABASE_SERVICE_ROLE_KEY: check("SUPABASE_SERVICE_ROLE_KEY"),
     SUPABASE_BUCKET: check("SUPABASE_BUCKET"),
+    푸시알림_키: process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY ? "있음" : "없음",
   });
 }
