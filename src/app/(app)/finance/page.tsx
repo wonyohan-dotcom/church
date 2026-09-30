@@ -83,6 +83,9 @@ export default async function FinancePage({
                     </span>
                   )}
                 </Link>
+                <Link href="/finance/import" className="btn btn-ghost">
+                  엑셀 가져오기
+                </Link>
                 <Link href="/finance/expenses/new" className="btn btn-ghost">
                   지출 입력
                 </Link>

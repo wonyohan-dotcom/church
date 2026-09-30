@@ -116,6 +116,9 @@ export default async function MembersPage({
             <Link href="/members/groups" className="btn btn-ghost">
               교구·가정 관리
             </Link>
+            <Link href="/members/import" className="btn btn-ghost">
+              엑셀로 등록
+            </Link>
             <Link href="/members/new" className="btn btn-primary">
               <IconPlus width={16} height={16} />
               교인 등록
