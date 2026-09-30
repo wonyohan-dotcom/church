@@ -9,11 +9,15 @@
 # API 키는 '관리자(Admin)' 권한이어야 인증서·프로비저닝을 자동으로 만들 수 있다.
 #
 # 앱은 배포된 웹 주소를 띄우기만 하므로, 웹을 고칠 때는 다시 올릴 필요가 없다.
-# 아이콘·이름 등 mobile/ 폴더가 바뀌었을 때, 또는 Actions 탭에서 직접 실행할 때만 돈다.
+# 아이콘·이름 등 mobile/ 폴더가 바뀌었을 때, Actions 탭에서 직접 실행할 때,
+# 그리고 매달 초에 돈다. TestFlight 빌드는 올린 지 90일이 지나면 열리지 않으므로
+# 한 달마다 새 빌드를 올려 두어 목사님이 따로 신경 쓰지 않아도 계속 쓸 수 있게 한다.
 name: 아이폰 앱 올리기 (TestFlight)
 
 on:
   workflow_dispatch:
+  schedule:
+    - cron: "17 18 1 * *" # 매달 2일 새벽 3시 17분(한국 시각)
   push:
     branches: [claude/church-management-app-shdx1d]
     paths:
