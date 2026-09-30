@@ -6,7 +6,7 @@ import { won, ymd } from "@/lib/format";
 import { Card, CardTitle, PageHeader, StatCard } from "@/components/ui";
 import { YearSelect } from "@/components/year-select";
 import { BreakdownBars, MonthlyIncomeExpenseChart } from "@/components/charts";
-import { IconPlus, IconTrend } from "@/components/icons";
+import { IconPlus, IconSearch, IconTrend } from "@/components/icons";
 
 export const metadata = { title: "회계 관리" };
 
@@ -98,6 +98,22 @@ export default async function FinancePage({
           </>
         }
       />
+
+      {/* 수입·지출 내역 찾기 — 가장 자주 쓰는 기능이라 맨 위에 둔다 */}
+      <form action="/finance/ledger" method="get" className="card mb-5 flex items-center gap-2 p-2 pl-3">
+        <IconSearch width={18} height={18} className="shrink-0 text-ink-3" />
+        <input type="hidden" name="year" value={year} />
+        <input
+          name="q"
+          type="search"
+          placeholder="수입·지출 찾기 (이름, 거래처, 적요, 금액)"
+          className="min-w-0 flex-1 bg-transparent py-2 text-[16px] text-ink outline-none placeholder:text-ink-3"
+          enterKeyHint="search"
+        />
+        <Link href={`/finance/ledger?year=${year}`} className="btn btn-ghost btn-sm shrink-0">
+          전체 내역
+        </Link>
+      </form>
 
       {bankPending > 0 && (
         <Link

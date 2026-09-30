@@ -50,7 +50,7 @@ export function Sidebar({
         <div className="min-w-0">
           <p className="title-serif truncate text-[1.05rem] leading-tight text-ink">{churchName}</p>
           <p className="mt-0.5 text-[0.7rem] font-medium tracking-[0.02em] text-ink-3">
-            심플한교회관리
+            심플한 교회관리
           </p>
         </div>
       </Link>

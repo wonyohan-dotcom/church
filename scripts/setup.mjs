@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * 심플한교회관리 — 설치 도우미
+ * 심플한 교회관리 — 설치 도우미
  *
  * 사람이 직접 해야 하는 일은 Supabase 대시보드에서 값 두 개를 복사해 오는 것뿐이다.
  * 나머지(비밀키 생성, 주소 3종 계산, .env 작성, 버킷 생성, 표 생성, 검증,
@@ -204,7 +204,7 @@ async function main() {
   lines = rl[Symbol.asyncIterator]();
   if (stdin.isTTY) console.clear();
   line();
-  console.log(c.b("  심플한교회관리 — 설치 도우미"));
+  console.log(c.b("  심플한 교회관리 — 설치 도우미"));
   line();
   console.log();
   console.log("  Supabase 대시보드에서 값 " + c.b("두 개") + "만 복사해 오시면");

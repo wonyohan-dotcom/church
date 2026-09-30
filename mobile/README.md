@@ -1,11 +1,11 @@
 # 아이폰 앱 (TestFlight) 올리는 방법
 
-이 폴더는 **심플한교회관리 웹 앱을 아이폰 앱으로 감싼 것**입니다.
+이 폴더는 **심플한 교회관리 웹 앱을 아이폰 앱으로 감싼 것**입니다.
 앱을 열면 `https://church-three-opal.vercel.app` 화면이 그대로 뜹니다.
 그래서 웹을 고치면(깃허브에 올리면) 앱은 **다시 올리지 않아도** 바로 바뀝니다.
 앱을 다시 올려야 하는 때는 아이콘·앱 이름을 바꿀 때뿐입니다.
 
-- 앱 이름: 심플한교회관리
+- 앱 이름: 심플한 교회관리
 - 번들 ID: `com.wonyohan.simplechurch`
 
 앱을 올리는 방법은 두 가지입니다. **A(자동)** 을 권합니다. 맥이 없어도 됩니다.
@@ -28,7 +28,7 @@ https://developer.apple.com/account → **멤버십 세부사항(Membership deta
 
 ### A-3. App Store Connect 에 앱 만들기
 1. https://appstoreconnect.apple.com/apps → **+** → **신규 앱**
-2. 플랫폼 iOS / 이름 `심플한교회관리` (이미 쓰는 이름이라고 나오면 뒤에 교회 이름을 붙이세요)
+2. 플랫폼 iOS / 이름 `심플한 교회관리` (이미 쓰는 이름이라고 나오면 뒤에 교회 이름을 붙이세요)
 3. 기본 언어 한국어 / 번들 ID `com.wonyohan.simplechurch` / SKU `simplechurch` / 사용자 액세스 전체 → **생성**
 
 ### A-4. 업로드용 API 키 만들기
@@ -86,7 +86,7 @@ Xcode 가 열리면서 처음 한 번은 필요한 부품(Capacitor)을 인터�
 ## 3. App Store Connect 에 앱 만들기 (처음 한 번, A-3 을 했다면 건너뛰기)
 
 1. https://appstoreconnect.apple.com → **앱** → 왼쪽 위 **+** → **신규 앱**
-2. 플랫폼: iOS / 이름: 심플한교회관리 (이미 있으면 뒤에 교회 이름을 붙이세요)
+2. 플랫폼: iOS / 이름: 심플한 교회관리 (이미 있으면 뒤에 교회 이름을 붙이세요)
 3. 기본 언어: 한국어 / 번들 ID: `com.wonyohan.simplechurch` 선택
    (목록에 없으면 2번 서명 설정을 먼저 마친 뒤 새로고침)
 4. SKU: `simplechurch` (아무 영문이나 가능) → **생성**

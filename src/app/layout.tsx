@@ -5,12 +5,12 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: {
-    default: "심플한교회관리",
-    template: "%s · 심플한교회관리",
+    default: "심플한 교회관리",
+    template: "%s · 심플한 교회관리",
   },
   description: "교적 · 회계 · 기부금영수증 · 교회 역사를 한 곳에서 관리합니다.",
   manifest: "/manifest.webmanifest",
-  appleWebApp: { capable: true, statusBarStyle: "default", title: "심플한교회" },
+  appleWebApp: { capable: true, statusBarStyle: "default", title: "심플한 교회관리" },
 };
 
 export const viewport: Viewport = {

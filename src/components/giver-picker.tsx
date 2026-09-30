@@ -243,7 +243,7 @@ function PickerSheet({
               value={q}
               onChange={(e) => setQ(e.target.value)}
               placeholder="교인 이름 검색"
-              className="field pl-9"
+              className="field" style={{ paddingLeft: "2.3rem" }}
               enterKeyHint="search"
             />
           </label>

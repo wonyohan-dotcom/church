@@ -4,7 +4,7 @@ import { requireUser } from "@/lib/auth";
 import { getMemberYearOfferings } from "@/lib/finance";
 import { RECEIPT_STATUS, type ReceiptStatus } from "@/lib/constants";
 import { won, ymd } from "@/lib/format";
-import { Alert, Avatar, Badge, Card, CardTitle, PageHeader, StatCard } from "@/components/ui";
+import { Alert, Avatar, Badge, Card, CardTitle, PageHeader } from "@/components/ui";
 import { IconChevronRight, IconReceipt } from "@/components/icons";
 import { PushToggle } from "@/components/push-toggle";
 
@@ -50,6 +50,10 @@ export default async function MyPage({
     }),
   ]);
 
+  const monthly = Array.from({ length: 12 }, () => 0);
+  for (const o of thisYearData.offerings) monthly[o.date.getMonth()] += o.amount;
+  const maxMonth = Math.max(1, ...monthly);
+
   if (!member) {
     return (
       <>
@@ -83,19 +87,45 @@ export default async function MyPage({
         </div>
       </Card>
 
-      <div className="mb-5 grid grid-cols-2 gap-3">
-        <StatCard
-          label={`${thisYear}년 헌금 누계`}
-          value={won(thisYearData.total)}
-          sub={`${thisYearData.offerings.length}회`}
-          tone="income"
-        />
-        <StatCard
-          label={`${lastYear}년 헌금 누계`}
-          value={won(lastYearData.total)}
-          sub={`${lastYearData.offerings.length}회`}
-        />
-      </div>
+      {/* 올해 내가 드린 헌금 — 성도 화면에서 가장 크게 보여 준다 */}
+      <section className="mb-5 overflow-hidden rounded-2xl bg-primary p-5 text-primary-ink shadow-[var(--shadow-sm)] sm:p-6">
+        <p className="text-sm font-semibold opacity-80">{thisYear}년 내가 드린 헌금</p>
+        <p className="tnum mt-1 text-[2.1rem] font-bold leading-tight tracking-[-0.02em] sm:text-[2.5rem]">
+          {won(thisYearData.total)}
+        </p>
+        <p className="tnum mt-1 text-sm opacity-80">
+          {thisYearData.offerings.length}회
+          {lastYearData.total > 0 && ` · ${lastYear}년 전체 ${won(lastYearData.total)}`}
+        </p>
+
+        {/* 달별 막대 */}
+        <div className="mt-5 flex h-20 items-end gap-1.5" aria-label="달별 헌금">
+          {monthly.map((amount, i) => (
+            <div key={i} className="flex flex-1 flex-col items-center gap-1">
+              <div
+                className={`w-full rounded-t-md bg-[var(--primary-ink)] ${amount ? "opacity-80" : "opacity-15"}`}
+                style={{ height: `${Math.max(4, (amount / maxMonth) * 64)}px` }}
+                title={`${i + 1}월 ${won(amount)}`}
+              />
+              <span className="tnum text-[0.62rem] opacity-70">{i + 1}</span>
+            </div>
+          ))}
+        </div>
+
+        {thisYearData.items.length > 0 && (
+          <ul className="mt-5 space-y-1.5 border-t border-[color-mix(in_srgb,var(--primary-ink)_20%,transparent)] pt-4 text-sm">
+            {thisYearData.items.slice(0, 4).map((it) => (
+              <li key={it.accountName} className="flex justify-between gap-3">
+                <span className="opacity-85">{it.accountName} <span className="opacity-60">{it.count}회</span></span>
+                <span className="tnum font-semibold">{won(it.amount)}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+        <Link href="/my/offerings" className="mt-4 inline-block text-sm font-semibold underline underline-offset-4">
+          내 헌금 전체 보기 →
+        </Link>
+      </section>
 
       <Card className="mb-5">
         <CardTitle

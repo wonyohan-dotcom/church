@@ -5,6 +5,7 @@ import {
   IconCare,
   IconHome,
   IconReceipt,
+  IconSearch,
   IconSettings,
   IconUsers,
   IconWallet,
@@ -40,6 +41,7 @@ export const NAV_SECTIONS: NavSection[] = [
     title: "재정",
     items: [
       { href: "/finance", label: "회계", icon: IconWallet, roles: FINANCE_ROLES },
+      { href: "/finance/ledger", label: "수입·지출 내역", icon: IconSearch, roles: FINANCE_ROLES },
       { href: "/finance/bank", label: "입출금 알림", icon: IconBank, roles: FINANCE_ROLES },
       { href: "/receipts", label: "기부금영수증", icon: IconReceipt, roles: FINANCE_ROLES },
     ],

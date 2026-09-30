@@ -228,18 +228,28 @@ export async function resetDemo(now = new Date()) {
 
       const expenses = [];
       for (let mth = 0; mth < 12; mth++) {
-        for (let k = 0; k < 7; k++) {
-          const [payee, description] = pick(PAYEES);
+        // 이번 달은 지난 날짜만큼만 (달 초에 지출만 잔뜩 보이지 않게)
+        const count = mth === 0 ? Math.floor((4 * now.getDate()) / 30) : 4;
+        for (let k = 0; k < count; k++) {
+          const [payee, description, accountName] = pick(PAYEES);
           expenses.push({
             churchId,
             date: new Date(now.getFullYear(), now.getMonth() - mth, int(1, mth === 0 ? Math.max(1, now.getDate()) : 28)),
-            amount: int(3, 60) * 10_000,
-            accountId: pick(spending).id,
+            amount: int(3, 40) * 10_000,
+            accountId: (spending.find((a) => a.name === accountName) ?? pick(spending)).id,
             payee,
             description,
             method: "TRANSFER",
           });
         }
+      }
+      for (let mth = 0; mth < 12; mth++) {
+        const date = new Date(now.getFullYear(), now.getMonth() - mth, 25);
+        if (date > now) continue;
+        expenses.push(
+          { churchId, date, amount: 1_800_000, accountId: byName("교역자 사례비").id, payee: "담임목사", description: "월 사례비", method: "TRANSFER" },
+          { churchId, date, amount: 500_000, accountId: byName("임대료").id, payee: "○○빌딩", description: "예배당 월세", method: "TRANSFER" },
+        );
       }
       await tx.expense.createMany({ data: expenses });
 
@@ -339,14 +349,19 @@ const PEOPLE: ReadonlyArray<readonly [string, "M" | "F", string]> = [
   ["서새길", "M", "성도"], ["유다함", "F", "성도"],
 ];
 
-const PAYEES: ReadonlyArray<readonly [string, string]> = [
-  ["한국전력공사", "예배당 전기요금"],
-  ["○○문구", "주일학교 교재"],
-  ["행복마트", "친교실 다과"],
-  ["정수기렌탈", "정수기 월 사용료"],
-  ["○○자동차정비", "교회 차량 정비"],
-  ["도서출판 은혜", "성경공부 교재"],
-  ["쿠팡", "예배실 소모품"],
+// [거래처, 적요, 지출 항목]
+const PAYEES: ReadonlyArray<readonly [string, string, string]> = [
+  ["한국전력공사", "예배당 전기요금", "공과금"],
+  ["○○도시가스", "난방비", "공과금"],
+  ["○○문구", "주일학교 교재", "교육부서 사역비"],
+  ["행복마트", "친교실 다과", "예배·행사비"],
+  ["꽃집 은혜", "강단 꽃꽂이", "예배·행사비"],
+  ["정수기렌탈", "정수기 월 사용료", "시설 유지보수"],
+  ["○○설비", "화장실 수리", "시설 유지보수"],
+  ["○○자동차정비", "교회 차량 정비", "차량 유지비"],
+  ["도서출판 은혜", "성경공부 교재", "교육부서 사역비"],
+  ["쿠팡", "예배실 소모품", "사무·비품비"],
+  ["필리핀 선교지", "선교사 후원", "선교비"],
 ];
 
 const VISITS = [

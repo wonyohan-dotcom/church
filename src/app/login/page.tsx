@@ -55,10 +55,18 @@ export default async function LoginPage({
       <div className="card p-6">
         <LoginForm next={next ?? ""} />
       </div>
-      <a href="/demo" className="btn btn-ghost mt-3 w-full py-3">
-        로그인 없이 체험해 보기
-      </a>
-      <p className="mt-2 text-center text-xs text-ink-3">예시 자료가 든 체험용 교회로 들어갑니다.</p>
+      <div className="mt-4 rounded-2xl border border-line bg-surface-2 p-4">
+        <p className="text-center text-sm font-bold text-ink">회원가입 없이 둘러보기</p>
+        <p className="mt-0.5 text-center text-xs text-ink-3">예시 자료가 든 체험용 교회로 바로 들어갑니다.</p>
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          <a href="/demo" className="btn btn-primary py-3">
+            관리자 화면
+          </a>
+          <a href="/demo?as=member" className="btn btn-ghost bg-surface py-3">
+            성도 화면
+          </a>
+        </div>
+      </div>
     </AuthShell>
   );
 }

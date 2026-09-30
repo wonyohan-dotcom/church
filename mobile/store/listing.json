@@ -1,32 +1,37 @@
 {
+  "name": "심플한 교회관리",
   "bundleId": "com.wonyohan.simplechurch",
   "version": "1.0",
   "locale": "ko",
   "copyright": "2026 원요한",
   "primaryCategory": "PRODUCTIVITY",
   "secondaryCategory": "BUSINESS",
-  "territories": ["KOR"],
+  "territories": [
+    "KOR"
+  ],
   "subtitle": "교적·출석·헌금·영수증을 한곳에서",
   "privacyPolicyUrl": "https://church-three-opal.vercel.app/privacy",
   "supportUrl": "https://church-three-opal.vercel.app/support",
   "marketingUrl": "https://church-three-opal.vercel.app/login",
   "keywords": "교회,교회관리,교적,교적부,헌금,재정,회계,출석,심방,기부금영수증,결산,교인,목회,새가족",
-  "promotionalText": "작은 교회를 위한 교회 관리 앱. 교적부, 출석, 심방, 헌금과 지출, 기부금영수증, 결산서까지 한곳에서 쉽게 관리하세요. 로그인 없이 체험해 볼 수 있습니다.",
-  "description": "심플한교회관리는 작은 교회가 교회 살림을 한곳에서 관리하도록 만든 앱입니다. 복잡한 프로그램 없이, 휴대폰에서 바로 쓸 수 있습니다.\n\n■ 오늘 챙길 일을 한눈에\n첫 화면에서 이번 주 생일, 몇 주째 예배에 못 나오신 분, 기록할 입출금, 처리할 가입 신청과 영수증 신청을 바로 봅니다.\n\n■ 교적부\n교인 정보, 사진, 가족 관계, 교구, 직분, 신앙 이력(등록·세례)을 정리합니다. 엑셀 파일로 한꺼번에 가져올 수 있습니다.\n\n■ 출석과 돌봄\n이름을 눌러 출석을 체크하고, 주일 출석 추이를 봅니다. 연속으로 결석한 분을 알려 드리고, 심방·상담 기록을 남길 수 있습니다.\n\n■ 헌금과 지출\n헌금과 지출을 항목별로 기록하고, 달별 합계를 그래프로 봅니다. 두 분이 함께 드린 헌금도 두 분 모두의 내역에 보입니다. 교회 통장의 입출금 문자를 읽어 장부에 기록하도록 연결할 수도 있습니다(선택).\n\n■ 기부금영수증과 결산서\n성도가 앱에서 기부금영수증을 신청하면 바로 발급해 인쇄할 수 있습니다. 예산 대비 결산서를 만들어 PDF로 저장합니다.\n\n■ 성도 화면\n성도는 본인의 헌금 내역을 보고 기부금영수증을 신청할 수 있습니다.\n\n■ 안전하게\n교회마다 자료가 완전히 분리되고, 직분에 따라 볼 수 있는 화면이 나뉩니다. 누가 무엇을 입력·수정했는지 기록이 남습니다.\n\n로그인 화면의 ‘로그인 없이 체험해 보기’를 누르면 예시 자료가 든 체험용 교회를 바로 둘러볼 수 있습니다. 우리 교회를 등록하면 바로 쓸 수 있습니다.",
+  "promotionalText": "작은 교회를 위한 교회 관리 앱. 교적부, 출석, 심방, 헌금과 지출, 기부금영수증, 결산서까지 한곳에서. 회원가입 없이 둘러볼 수 있습니다.",
+  "description": "심플한 교회관리는 작은 교회가 교회 살림을 한곳에서 관리하도록 만든 앱입니다. 복잡한 프로그램 없이, 휴대폰에서 바로 쓸 수 있습니다.\n\n■ 오늘 챙길 일을 한눈에\n첫 화면에서 이번 주 생일, 몇 주째 예배에 못 나오신 분, 기록할 입출금, 처리할 가입 신청과 영수증 신청을 바로 봅니다.\n\n■ 교적부\n교인 정보, 사진, 가족 관계, 교구, 직분, 신앙 이력(등록·세례)을 정리합니다. 엑셀 파일로 한꺼번에 가져올 수 있습니다.\n\n■ 출석과 돌봄\n이름을 눌러 출석을 체크하고, 주일 출석 추이를 봅니다. 연속으로 결석한 분을 알려 드리고, 심방·상담 기록을 남길 수 있습니다.\n\n■ 헌금과 지출\n헌금과 지출을 항목별로 기록하고, 달별 합계를 그래프로 봅니다. 이름·거래처·적요·금액으로 수입·지출 내역을 바로 찾을 수 있습니다. 두 분이 함께 드린 헌금도 두 분 모두의 내역에 보입니다. 교회 통장의 입출금 문자를 읽어 장부에 기록하도록 연결할 수도 있습니다(선택).\n\n■ 기부금영수증과 결산서\n성도가 앱에서 기부금영수증을 신청하면 바로 발급해 인쇄할 수 있습니다. 예산 대비 결산서를 만들어 PDF로 저장합니다.\n\n■ 성도 화면\n성도는 올해 내가 드린 헌금을 달별로 한눈에 보고, 기부금영수증을 신청할 수 있습니다.\n\n■ 안전하게\n교회마다 자료가 완전히 분리되고, 직분에 따라 볼 수 있는 화면이 나뉩니다. 누가 무엇을 입력·수정했는지 기록이 남습니다.\n\n회원가입 없이도 ‘둘러보기’로 예시 자료가 든 체험용 교회를 관리자 화면과 성도 화면으로 바로 둘러볼 수 있습니다. 어느 교회든 교회를 등록하면 바로 쓸 수 있고, 교회마다 자료가 완전히 분리됩니다.",
   "review": {
     "firstName": "요한",
     "lastName": "원",
     "email": "wonyohan@gmail.com",
     "demoUser": "demo",
     "demoPassword": "demo1234",
-    "notes": "Thank you for reviewing SimpleChurch (심플한교회관리), a church administration app for small Korean churches.\n\nHOW TO REVIEW\n- Sign in with the demo account above (ID: demo / PW: demo1234), or tap “로그인 없이 체험해 보기” (Try without signing in) on the login screen. Both open a demo church filled with sample data that resets daily.\n\nWHAT THE APP DOES\n- Membership records (교인), attendance check and trend (출석), pastoral visit notes (심방), offerings and expenses (회계) with monthly charts, budget-vs-actual report, and Korean tax donation receipts (기부금영수증).\n- Members of a church can sign up, be approved by their church admin, and see their own giving history and request receipts.\n- Optional: churches can forward their bank’s deposit/withdrawal SMS to the app using an iOS Shortcuts personal automation that the user sets up themselves. The app never reads messages on its own.\n\nACCOUNT DELETION\n- Menu “전체” (More) → “내 정보 · 계정 삭제” (My info · Delete account). A church’s last admin can delete the whole church and all its data there. (Deletion is disabled for the demo account so the demo keeps working for everyone.)\n\nPRIVACY\n- No ads, no tracking, no third-party analytics. Privacy policy: https://church-three-opal.vercel.app/privacy"
+    "notes": "Thank you for reviewing SimpleChurch (심플한 교회관리), a church administration app that any Korean church can register and use.\n\nHOW TO REVIEW\n- Sign in with the demo account above (ID: demo / PW: demo1234), or use “회원가입 없이 둘러보기” (Browse without signing up) on the login screen: “관리자 화면” opens the admin view, “성도 화면” opens the member view. All open a demo church filled with sample data that resets daily.\n\nWHAT THE APP DOES\n- Membership records (교인), attendance check and trend (출석), pastoral visit notes (심방), offerings and expenses (회계) with monthly charts, budget-vs-actual report, and Korean tax donation receipts (기부금영수증).\n- Members of a church can sign up, be approved by their church admin, and see their own giving history and request receipts.\n- Optional: churches can forward their bank’s deposit/withdrawal SMS to the app using an iOS Shortcuts personal automation that the user sets up themselves. The app never reads messages on its own.\n\nACCOUNT DELETION\n- Menu “전체” (More) → “내 정보 · 계정 삭제” (My info · Delete account). A church’s last admin can delete the whole church and all its data there. (Deletion is disabled for the demo account so the demo keeps working for everyone.)\n\nPRIVACY\n- No ads, no tracking, no third-party analytics. Privacy policy: https://church-three-opal.vercel.app/privacy"
   },
   "screenshots": [
     "screenshots/1-dashboard.png",
-    "screenshots/2-offerings.png",
-    "screenshots/3-bank.png",
-    "screenshots/4-attendance.png",
-    "screenshots/5-members.png",
-    "screenshots/6-report.png"
+    "screenshots/2-ledger.png",
+    "screenshots/3-offerings.png",
+    "screenshots/4-bank.png",
+    "screenshots/5-member.png",
+    "screenshots/6-attendance.png",
+    "screenshots/7-members.png",
+    "screenshots/8-report.png"
   ]
 }

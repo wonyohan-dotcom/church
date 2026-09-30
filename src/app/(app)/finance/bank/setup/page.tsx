@@ -75,7 +75,7 @@ export default async function BankSetupPage({
     <>
       <PageHeader
         title="입출금 알림 받기 설정"
-        description="교회 통장(기업은행·농협)에 돈이 들어오거나 나갈 때 오는 문자를 자동으로 받아 장부에 넣습니다."
+        description="교회 통장에 돈이 들어오거나 나갈 때 오는 문자를 자동으로 받아 장부에 넣습니다."
         back={{ href: "/finance/bank", label: "입출금 알림함" }}
       />
 
@@ -105,6 +105,10 @@ export default async function BankSetupPage({
             </li>
             <li>
               <b>농협</b>: NH기업뱅킹·NH스마트뱅킹 앱 또는 지점에서 <b>‘입출금 문자(SMS) 알림’</b> 신청
+            </li>
+            <li>
+              <b>그 밖의 은행</b>(국민·신한·우리·하나·카카오뱅크·새마을금고·신협·우체국 등): 은행 앱의 알림 설정 또는
+              지점에서 <b>입출금 문자 알림</b> 신청
             </li>
           </ul>
           <p className="text-xs text-ink-3">
@@ -155,8 +159,8 @@ export default async function BankSetupPage({
               목록에서 <b>메시지</b>를 고릅니다.
             </li>
             <li>
-              <b>메시지 포함</b> 칸에 <b>잔액</b> 이라고 적습니다. (기업은행·농협 입출금 문자에는
-              모두 ‘잔액’이 들어 있어, 인증번호 같은 다른 문자는 보내지 않습니다)
+              <b>메시지 포함</b> 칸에 <b>잔액</b> 이라고 적습니다. (은행 입출금 문자에는
+              대부분 ‘잔액’이 들어 있어, 인증번호 같은 다른 문자는 보내지 않습니다)
             </li>
             <li>
               아래에서 <b>즉시 실행</b>을 고르고, ‘실행 시 알림’은 꺼 둡니다. → 오른쪽 위 <b>다음</b>

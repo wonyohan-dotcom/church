@@ -1,6 +1,6 @@
 {
 	"appId": "com.wonyohan.simplechurch",
-	"appName": "심플한교회관리",
+	"appName": "심플한 교회관리",
 	"webDir": "www",
 	"server": {
 		"url": "https://church-three-opal.vercel.app",

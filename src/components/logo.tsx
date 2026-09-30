@@ -1,5 +1,5 @@
 /**
- * 심플한교회관리 로고 — 심플한신앙(SF)의 형제 앱
+ * 심플한 교회관리 로고 — 심플한신앙(SF)의 형제 앱
  *
  * 심플한신앙 아이콘과 같은 짙은 청록빛 남색 바탕, 금빛 굵은 글자를 쓰고
  * 글자만 "SC"(Simple Church)로 바꿨다. 옆에 청록 십자가를 붙여
@@ -9,7 +9,7 @@
  * 앱 아이콘·파비콘 PNG 는 scripts/render-icons.mjs 가 같은 모양으로 만든다.
  */
 
-export const APP_NAME = "심플한교회관리";
+export const APP_NAME = "심플한 교회관리";
 export const APP_TAGLINE = "교적 · 회계 · 출석 · 기부금영수증";
 
 export const LOGO_COLORS = { bg: "#142f3b", gold: "#f7b56b", cross: "#16a097" } as const;

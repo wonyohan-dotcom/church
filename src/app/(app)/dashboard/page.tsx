@@ -220,36 +220,41 @@ export default async function DashboardPage({
         {money && (
           <Card>
             <div className="flex flex-wrap items-start justify-between gap-3">
-              <div>
+              <Link href="/finance/ledger" className="group">
                 <p className="eyebrow">재정 · 현재 잔액</p>
-                <p className="tnum mt-2 text-[2.2rem] font-bold leading-none tracking-[-0.03em] text-ink sm:text-[2.6rem]">
+                <p className="tnum mt-2 text-[2.2rem] font-bold leading-none tracking-[-0.03em] text-ink group-hover:text-primary sm:text-[2.6rem]">
                   {won(money.balance)}
                 </p>
-              </div>
-              <Link href="/finance" className="text-sm font-semibold text-primary">
-                회계 →
+              </Link>
+              <Link href="/finance/ledger" className="text-sm font-semibold text-primary">
+                내역 보기 →
               </Link>
             </div>
             {/* 휴대폰에서는 한 줄씩, 넓은 화면에서는 세 칸으로 */}
-            <dl className="mt-5 divide-y divide-line border-y border-line sm:grid sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+            <div className="mt-5 divide-y divide-line border-y border-line sm:grid sm:grid-cols-3 sm:divide-x sm:divide-y-0">
               {[
-                { label: `${month}월 수입`, value: money.monthIncome, tone: "text-income" },
-                { label: `${month}월 지출`, value: money.monthExpense, tone: "text-expense" },
+                { label: `${month}월 수입`, value: money.monthIncome, tone: "text-income", href: `/finance/ledger?year=${year}&month=${month}&type=in` },
+                { label: `${month}월 지출`, value: money.monthExpense, tone: "text-expense", href: `/finance/ledger?year=${year}&month=${month}&type=out` },
                 {
                   label: `${year}년 남은 돈`,
                   value: money.summary.totalIncome - money.summary.totalExpense,
                   tone: "text-ink",
+                  href: `/finance/ledger?year=${year}`,
                 },
               ].map((x) => (
-                <div
+                <Link
                   key={x.label}
-                  className="flex items-center justify-between py-2.5 sm:block sm:px-4 sm:py-3.5 sm:first:pl-0 sm:last:pr-0"
+                  href={x.href}
+                  className="flex items-center justify-between py-2.5 hover:bg-surface-2 sm:block sm:px-4 sm:py-3.5 sm:first:pl-0 sm:last:pr-0"
                 >
-                  <dt className="text-sm text-ink-3 sm:text-xs">{x.label}</dt>
-                  <dd className={`tnum text-[1.02rem] font-bold sm:mt-1 sm:text-lg ${x.tone}`}>{won(x.value)}</dd>
-                </div>
+                  <span className="text-sm text-ink-3 sm:block sm:text-xs">{x.label}</span>
+                  <span className={`tnum flex items-center gap-1 text-[1.02rem] font-bold sm:mt-1 sm:text-lg ${x.tone}`}>
+                    {won(x.value)}
+                    <IconChevronRight width={14} height={14} className="text-ink-3 sm:hidden" />
+                  </span>
+                </Link>
               ))}
-            </dl>
+            </div>
             <div className="mt-4">
               <MonthlyIncomeExpenseChart data={money.summary.monthly} />
             </div>

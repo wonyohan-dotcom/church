@@ -99,15 +99,23 @@ say(`카테고리: ${L.primaryCategory} / ${L.secondaryCategory}`);
 
 const infoLocs = await get(`/v1/appInfos/${info.id}/appInfoLocalizations`);
 const infoLoc = infoLocs.data.find((l) => l.attributes.locale.startsWith(L.locale));
-const infoAttrs = { subtitle: L.subtitle, privacyPolicyUrl: L.privacyPolicyUrl };
+const infoAttrs = { ...(L.name ? { name: L.name } : {}), subtitle: L.subtitle, privacyPolicyUrl: L.privacyPolicyUrl };
 if (infoLoc) {
-  await patch(`/v1/appInfoLocalizations/${infoLoc.id}`, { data: { type: "appInfoLocalizations", id: infoLoc.id, attributes: infoAttrs } });
+  try {
+    await patch(`/v1/appInfoLocalizations/${infoLoc.id}`, { data: { type: "appInfoLocalizations", id: infoLoc.id, attributes: infoAttrs } });
+  } catch (e) {
+    // 앱 이름은 앱스토어 전체에서 하나뿐이라 이미 누가 쓰고 있으면 거절된다. 이름만 빼고 다시 보낸다.
+    if (!L.name) throw e;
+    note(`앱 이름 '${L.name}' 을(를) 쓰지 못했습니다: ${e.message}`);
+    const { name: _skip, ...rest } = infoAttrs;
+    await patch(`/v1/appInfoLocalizations/${infoLoc.id}`, { data: { type: "appInfoLocalizations", id: infoLoc.id, attributes: rest } });
+  }
 } else {
   await post(`/v1/appInfoLocalizations`, {
     data: { type: "appInfoLocalizations", attributes: { locale: L.locale, name: app.attributes.name, ...infoAttrs }, relationships: { appInfo: rel("appInfos", info.id) } },
   });
 }
-say(`부제·개인정보처리방침 주소 (${infoLoc?.attributes.locale ?? L.locale})`);
+say(`앱 이름 '${L.name ?? app.attributes.name}' · 부제 · 개인정보처리방침 주소 (${infoLoc?.attributes.locale ?? L.locale})`);
 
 // 연령 등급: 모든 항목 '없음'. 애플이 항목을 바꿔도 되도록, 받지 않는 항목은 빼고 다시 보낸다.
 {

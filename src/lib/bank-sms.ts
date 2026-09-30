@@ -24,7 +24,7 @@ export type ParsedBankMessage = {
   occurredAt: Date | null;
 };
 
-// 이 교회는 기업은행·농협 통장을 쓴다. 두 은행을 먼저 보고, 나머지는 혹시 몰라 남겨 둔다.
+// 처음 쓰기 시작한 교회가 기업은행·농협 통장이라 두 은행을 먼저 본다. 다른 은행 문자도 읽는다.
 // 기업은행 문자는 은행 이름이 맨 끝 줄에 "기업" 한 단어로만 나온다.
 const BANKS: Array<[RegExp, string]> = [
   [/NH농협|농협|\bNH\b/, "농협"],

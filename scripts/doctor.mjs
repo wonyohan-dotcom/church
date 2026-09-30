@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * 심플한교회관리 — 한 줄 점검·복구
+ * 심플한 교회관리 — 한 줄 점검·복구
  *
  *   npm run doctor
  *
@@ -38,7 +38,7 @@ const run = (cmd, args, opts = {}) =>
 
 console.log();
 line();
-console.log(c.b("  심플한교회관리 — 점검"));
+console.log(c.b("  심플한 교회관리 — 점검"));
 line();
 console.log();
 
