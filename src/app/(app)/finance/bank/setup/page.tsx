@@ -36,7 +36,7 @@ function Step({ n, title, children, id }: { n: number; title: string; children: 
   return (
     <Card>
       <div id={id} className="mb-3 flex scroll-mt-20 items-center gap-2.5">
-        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-bold text-white">
+        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-ink">
           {n}
         </span>
         <h2 className="text-[0.95rem] font-bold text-ink">{title}</h2>

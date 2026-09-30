@@ -53,6 +53,8 @@ model Church {
   historyPhotos HistoryPhoto[]
   auditLogs     AuditLog[]
   bankAlerts    BankAlert[]
+  attendance    AttendanceRecord[]
+  visits        Visit[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -98,6 +100,7 @@ model User {
   expensesCreated  Expense[]         @relation("ExpenseCreator")
   receiptsIssued   DonationReceipt[] @relation("ReceiptIssuer")
   auditLogs        AuditLog[]
+  visitsWritten    Visit[]           @relation("VisitWriter")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -192,9 +195,11 @@ model Member {
   previousChurch String?
   note           String?
 
-  offerings Offering[]
-  receipts  DonationReceipt[]
-  user      User?             @relation("MemberAccount")
+  offerings  Offering[]
+  receipts   DonationReceipt[]
+  user       User?             @relation("MemberAccount")
+  attendance AttendanceCheck[]
+  visits     Visit[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -403,6 +408,74 @@ model HistoryPhoto {
 
   @@index([eventId])
   @@index([churchId])
+}
+
+// ─────────────────────────────────────────────
+// 출석
+// 예배(모임) 한 번이 출석부 하나다. 교인별 체크와, 교인이 아닌 방문자 수를 함께 적는다.
+// service : SUNDAY(주일예배) | WEDNESDAY(수요예배) | FRIDAY(금요기도회)
+//           DAWN(새벽기도) | SCHOOL(주일학교) | YOUTH(청년부) | SMALL(구역·목장)
+// ─────────────────────────────────────────────
+
+model AttendanceRecord {
+  id           String  @id @default(cuid())
+  date         DateTime
+  service      String   @default("SUNDAY")
+  visitorCount Int      @default(0) // 교적에 없는 방문자·새신자 수
+  note         String?
+
+  churchId String
+  church   Church @relation(fields: [churchId], references: [id], onDelete: Cascade)
+
+  checks AttendanceCheck[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([churchId, date, service])
+  @@index([churchId, service, date])
+}
+
+model AttendanceCheck {
+  id String @id @default(cuid())
+
+  recordId String
+  record   AttendanceRecord @relation(fields: [recordId], references: [id], onDelete: Cascade)
+
+  memberId String
+  member   Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@unique([recordId, memberId])
+  @@index([memberId])
+}
+
+// ─────────────────────────────────────────────
+// 심방 · 상담 기록
+// 교역자와 관리자만 보고 쓴다. (회계 담당자는 볼 수 없다)
+// kind : VISIT(심방) | COUNSEL(상담) | CALL(전화) | HOSPITAL(병문안) | ETC(기타)
+// ─────────────────────────────────────────────
+
+model Visit {
+  id      String   @id @default(cuid())
+  date    DateTime
+  kind    String   @default("VISIT")
+  content String
+  prayer  String? // 기도제목
+
+  churchId String
+  church   Church @relation(fields: [churchId], references: [id], onDelete: Cascade)
+
+  memberId String
+  member   Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  createdById String?
+  createdBy   User?   @relation("VisitWriter", fields: [createdById], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([churchId, date])
+  @@index([memberId, date])
 }
 
 // ─────────────────────────────────────────────

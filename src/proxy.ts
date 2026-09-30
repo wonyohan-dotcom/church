@@ -62,6 +62,6 @@ export const config = {
      * 정적 파일과 업로드 이미지를 제외한 모든 경로를 보호한다.
      * (업로드 경로는 라우트 안에서 직접 로그인 여부를 확인한다)
      */
-    "/((?!api/|_next/static|_next/image|uploads/|favicon.ico|icon.svg|sw.js|manifest.webmanifest).*)",
+    "/((?!api/|_next/static|_next/image|uploads/|favicon.ico|icon.svg|apple-icon.png|icons/|fonts/|sw.js|manifest.webmanifest).*)",
   ],
 };

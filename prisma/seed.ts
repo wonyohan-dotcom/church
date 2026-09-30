@@ -41,6 +41,10 @@ function pick<T>(arr: readonly T[]): T {
 
 async function clearAll() {
   console.log("기존 샘플 데이터를 정리합니다…");
+  await prisma.visit.deleteMany();
+  await prisma.attendanceCheck.deleteMany();
+  await prisma.attendanceRecord.deleteMany();
+  await prisma.bankAlert.deleteMany();
   await prisma.donationReceiptItem.deleteMany();
   await prisma.donationReceipt.deleteMany();
   await prisma.offering.deleteMany();
@@ -299,6 +303,51 @@ async function main() {
       password: pw, role: "MEMBER", status: "PENDING", churchId: graceId,
     },
   });
+
+  // ── 출석 (최근 10주 주일) · 심방 기록 ──
+  const today = new Date();
+  const sunday = new Date(today.getFullYear(), today.getMonth(), today.getDate() - today.getDay());
+  // 몇 분은 최근 3주 결석으로 두어 '돌아봐야 할 분' 목록이 보이게 한다.
+  const away = new Set(graceChurch.members.slice(-3).map((m) => m.id));
+  await prisma.member.updateMany({
+    where: { id: { in: [...away] } },
+    data: { registeredAt: new Date(today.getFullYear() - 3, 2, 1) },
+  });
+  for (let w = 9; w >= 0; w--) {
+    const date = new Date(sunday.getFullYear(), sunday.getMonth(), sunday.getDate() - w * 7);
+    const present = graceChurch.members.filter(
+      (m) => !(away.has(m.id) && w < 3) && Math.random() < 0.82,
+    );
+    await prisma.attendanceRecord.create({
+      data: {
+        churchId: graceId,
+        date,
+        service: "SUNDAY",
+        visitorCount: randInt(0, 4),
+        checks: { create: present.map((m) => ({ memberId: m.id })) },
+      },
+    });
+  }
+  const pastorUser = await prisma.user.findFirst({ where: { churchId: graceId, role: "PASTOR" } });
+  const visitNotes = [
+    ["VISIT", "가정 심방. 자녀 진학 문제로 기도 부탁하심. 가정 예배를 다시 시작하기로 함.", "자녀의 진로가 잘 열리도록"],
+    ["HOSPITAL", "무릎 수술 후 회복 중. 다음 주 퇴원 예정.", "빠른 회복"],
+    ["CALL", "최근 이직으로 주일 출석이 어려우시다고 함. 온라인 예배 안내.", null],
+    ["COUNSEL", "새가족 교육 일정 상담. 4주 과정 등록.", null],
+  ] as const;
+  for (const [i, [kind, content, prayer]] of visitNotes.entries()) {
+    await prisma.visit.create({
+      data: {
+        churchId: graceId,
+        memberId: graceChurch.members[i * 3 + 1].id,
+        date: new Date(today.getFullYear(), today.getMonth(), today.getDate() - i * 5 - 1),
+        kind,
+        content,
+        prayer,
+        createdById: pastorUser?.id,
+      },
+    });
+  }
 
   // ── 두 번째 교회 (자료 격리 확인용) ──
   console.log("소망교회를 만듭니다…");

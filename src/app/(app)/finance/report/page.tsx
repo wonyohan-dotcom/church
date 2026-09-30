@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { requireStaff, canManageFinance } from "@/lib/auth";
+import { requireFinance, canManageFinance } from "@/lib/auth";
 import { getChurch } from "@/lib/church";
 import { getYearSummary } from "@/lib/finance";
 import { won } from "@/lib/format";
@@ -15,7 +15,7 @@ export default async function ReportPage({
 }: {
   searchParams: Promise<{ year?: string; ok?: string }>;
 }) {
-  const staff = await requireStaff();
+  const staff = await requireFinance();
   const sp = await searchParams;
 
   const now = new Date();

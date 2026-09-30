@@ -10,8 +10,10 @@ export type Role = keyof typeof ROLES;
 
 /** 관리자 화면(교적·회계·역사) 접근이 가능한 역할 */
 export const STAFF_ROLES: Role[] = ["ADMIN", "FINANCE", "PASTOR"];
-/** 회계 데이터를 수정할 수 있는 역할 */
+/** 회계 데이터를 보고 수정할 수 있는 역할 */
 export const FINANCE_ROLES: Role[] = ["ADMIN", "FINANCE"];
+/** 심방·상담 기록을 보고 쓸 수 있는 역할 (개인 사정이 담기므로 회계 담당자는 제외) */
+export const PASTORAL_ROLES: Role[] = ["ADMIN", "PASTOR"];
 
 /** 로그인 계정의 상태 — 가입 신청 후 관리자가 승인해야 사용할 수 있다. */
 export const USER_STATUS = {
@@ -25,8 +27,8 @@ export type UserStatus = keyof typeof USER_STATUS;
 /** 관리자가 가입 신청을 승인하면서 고를 수 있는 권한과 설명 */
 export const ROLE_DESCRIPTIONS: Record<Role, string> = {
   ADMIN: "모든 기능 + 교회 설정과 계정 관리",
-  FINANCE: "교적 조회 + 헌금·지출 입력, 영수증 발급",
-  PASTOR: "교적과 교회 역사 관리 (헌금 내역은 볼 수 없음)",
+  FINANCE: "교적·출석 + 헌금·지출 입력, 영수증 발급 (심방 기록은 볼 수 없음)",
+  PASTOR: "교적·출석·심방·교회 역사 관리 (헌금 내역은 볼 수 없음)",
   MEMBER: "본인 헌금 내역과 기부금영수증만",
 };
 
@@ -89,6 +91,34 @@ export type HistoryCategory = keyof typeof HISTORY_CATEGORIES;
 
 /** 연혁 하나에 붙일 수 있는 사진 최대 장수 */
 export const MAX_HISTORY_PHOTOS = 10;
+
+/** 출석부를 만드는 예배·모임 */
+export const SERVICES = {
+  SUNDAY: "주일예배",
+  WEDNESDAY: "수요예배",
+  FRIDAY: "금요기도회",
+  DAWN: "새벽기도",
+  SCHOOL: "주일학교",
+  YOUTH: "청년부",
+  SMALL: "구역·목장",
+} as const;
+export type Service = keyof typeof SERVICES;
+
+/** 몇 주 연속으로 주일예배에 빠지면 '돌아봐야 할 분'으로 보여줄지 */
+export const ABSENCE_ALERT_WEEKS = 3;
+
+/** 심방·상담 기록의 종류 */
+export const VISIT_KINDS = {
+  VISIT: "심방",
+  COUNSEL: "상담",
+  CALL: "전화",
+  HOSPITAL: "병문안",
+  ETC: "기타",
+} as const;
+export type VisitKind = keyof typeof VISIT_KINDS;
+
+/** 등록한 지 며칠까지를 '새가족'으로 볼지 */
+export const NEWCOMER_DAYS = 90;
 
 /** 신규 설치 시 기본 계정과목 */
 export const DEFAULT_ACCOUNTS: Array<{

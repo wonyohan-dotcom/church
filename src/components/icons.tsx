@@ -166,3 +166,57 @@ export const IconDownload = (p: P) => (
     <path d="M4 17v2.5A1.5 1.5 0 0 0 5.5 21h13a1.5 1.5 0 0 0 1.5-1.5V17" />
   </Base>
 );
+
+/** 출석 — 달력에 체크 */
+export const IconCalendarCheck = (p: P) => (
+  <Base {...p}>
+    <rect x="3.5" y="5" width="17" height="15.5" rx="2.5" />
+    <path d="M3.5 9.5h17M8 3v4M16 3v4" />
+    <path d="m9 14.5 2 2 4-4" />
+  </Base>
+);
+
+/** 심방 — 말풍선 속 하트(돌봄) */
+export const IconCare = (p: P) => (
+  <Base {...p}>
+    <path d="M20.5 11.5a8 8 0 0 1-11.7 7.1L4 20l1.4-4.3A8 8 0 1 1 20.5 11.5z" />
+    <path d="M12.5 15s-3.5-2-3.5-4.3a1.8 1.8 0 0 1 3.5-.7 1.8 1.8 0 0 1 3.5.7c0 2.3-3.5 4.3-3.5 4.3z" />
+  </Base>
+);
+
+/** 은행 — 기둥 있는 건물 */
+export const IconBank = (p: P) => (
+  <Base {...p}>
+    <path d="M3 9.5 12 4l9 5.5" />
+    <path d="M5 10v7.5M9.5 10v7.5M14.5 10v7.5M19 10v7.5" />
+    <path d="M3.5 20.5h17" />
+  </Base>
+);
+
+/** 더보기 — 네 칸 */
+export const IconGrid = (p: P) => (
+  <Base {...p}>
+    <rect x="4" y="4" width="6.5" height="6.5" rx="1.6" />
+    <rect x="13.5" y="4" width="6.5" height="6.5" rx="1.6" />
+    <rect x="4" y="13.5" width="6.5" height="6.5" rx="1.6" />
+    <rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.6" />
+  </Base>
+);
+
+/** 새가족 — 사람 + 더하기 */
+export const IconUserPlus = (p: P) => (
+  <Base {...p}>
+    <circle cx="10" cy="8" r="3.5" />
+    <path d="M3.5 20a6.5 6.5 0 0 1 13 0" />
+    <path d="M19 8v6M16 11h6" />
+  </Base>
+);
+
+/** 생일 — 케이크 */
+export const IconCake = (p: P) => (
+  <Base {...p}>
+    <path d="M4 20.5h16M5 20.5v-7a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v7" />
+    <path d="M5 15.5c1.2 1 2.3 1 3.5 0s2.3-1 3.5 0 2.3 1 3.5 0 2.3-1 3.5 0" />
+    <path d="M12 11.5V8M12 5.5v.01" />
+  </Base>
+);

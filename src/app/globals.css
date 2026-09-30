@@ -1,88 +1,91 @@
 @import "tailwindcss";
 
 /* ─────────────────────────────────────────────
-   차분한 모던 — 깊은 남색 + 따뜻한 종이 톤
-   모든 색은 CSS 변수로 정의하고 다크모드에서 값만 교체한다.
+   "빛이 드는 창" — 로고의 남색 · 금빛 · 종이색에서 가져온 팔레트
+   화면은 주보나 장부처럼 차분하게: 넓은 여백, 가는 구분선, 강조는 한 곳에만.
+   모든 색은 CSS 변수로 두고 다크모드에서는 값만 바꾼다.
+   다크모드의 주 색은 남색 대신 금빛을 쓴다(어두운 바탕에서 남색은 묻힌다).
    ───────────────────────────────────────────── */
 
 :root {
-  --bg: #f6f5f2;
+  --bg: #f7f4ee;
   --surface: #ffffff;
-  --surface-2: #f0eee9;
-  --surface-3: #e7e4dd;
-  --border: #e2ded5;
-  --border-strong: #cfcabd;
+  --surface-2: #f3efe7;
+  --surface-3: #ebe5da;
+  --border: #e7e1d6;
+  --border-strong: #d4ccbe;
 
-  --ink: #1a1e29;
-  --ink-2: #4b5162;
-  --ink-3: #7c8296;
+  --ink: #191c24;
+  --ink-2: #474c59;
+  --ink-3: #7d818c;
 
-  --primary: #22355c;
-  --primary-hover: #2c4271;
+  --primary: #1c2a47;
+  --primary-hover: #26375c;
   --primary-ink: #ffffff;
-  --primary-soft: #e8edf7;
-  --primary-soft-ink: #22355c;
+  --primary-soft: #eceef3;
+  --primary-soft-ink: #1c2a47;
 
-  --accent: #a97b4f;
-  --accent-soft: #f6efe6;
+  --accent: #9c7248;
+  --accent-bright: #d4ab78;
+  --accent-soft: #f6eee2;
 
-  --income: #2b7a68;
-  --income-soft: #e4f2ee;
-  --expense: #b0553f;
-  --expense-soft: #fbeae5;
-  --warn: #9a7420;
-  --warn-soft: #fbf2dd;
+  --income: #2c6a58;
+  --income-soft: #e6f1ec;
+  --expense: #b0523a;
+  --expense-soft: #f9ebe5;
+  --warn: #8f6a1c;
+  --warn-soft: #f8f0dc;
 
-  /* 차트 전용 색. 색각이상 대비까지 검증한 값이라 임의로 바꾸지 않는다.
-     (OKLCH 명도대·채도 하한·CVD 분리도·대비 6개 검사 통과) */
-  --chart-income: #2f6fb5;
-  --chart-expense: #d1691f;
-  --chart-bar: #22355c;
-  --chart-grid: #e6e2da;
-  --chart-axis: #9aa0ae;
+  /* 차트 — 남색(수입)과 황토(지출). 밝기 차이가 커서 색각이상에서도 구분된다. */
+  --chart-income: #2b4474;
+  --chart-expense: #cf9a66;
+  --chart-bar: #1c2a47;
+  --chart-grid: #ebe6dc;
+  --chart-axis: #9a9ea8;
 
-  --ring: rgba(34, 53, 92, 0.32);
-  --shadow-sm: 0 1px 2px rgba(26, 30, 41, 0.05);
-  --shadow: 0 1px 3px rgba(26, 30, 41, 0.07), 0 8px 24px -12px rgba(26, 30, 41, 0.14);
-  --shadow-lg: 0 2px 6px rgba(26, 30, 41, 0.08), 0 24px 48px -20px rgba(26, 30, 41, 0.24);
+  --ring: rgba(28, 42, 71, 0.28);
+  --shadow-sm: 0 1px 2px rgba(25, 28, 36, 0.04);
+  --shadow: 0 1px 2px rgba(25, 28, 36, 0.05), 0 6px 20px -10px rgba(25, 28, 36, 0.12);
+  --shadow-lg: 0 2px 6px rgba(25, 28, 36, 0.06), 0 24px 48px -20px rgba(25, 28, 36, 0.22);
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #101219;
-    --surface: #181b24;
-    --surface-2: #1f2330;
-    --surface-3: #272c3b;
-    --border: #2b3040;
-    --border-strong: #3b4256;
+    --bg: #111318;
+    --surface: #181b22;
+    --surface-2: #1e222b;
+    --surface-3: #262b36;
+    --border: #292e39;
+    --border-strong: #3a4050;
 
-    --ink: #e9e7e2;
-    --ink-2: #b0b5c4;
-    --ink-3: #848b9e;
+    --ink: #ebe8e2;
+    --ink-2: #b3b6c0;
+    --ink-3: #868b97;
 
-    --primary: #8fabdc;
-    --primary-hover: #a3bce8;
-    --primary-ink: #101219;
-    --primary-soft: #232b3d;
-    --primary-soft-ink: #b9caea;
+    --primary: #d4ab78;
+    --primary-hover: #e0bd8f;
+    --primary-ink: #14161b;
+    --primary-soft: #2a241b;
+    --primary-soft-ink: #e3c49b;
 
-    --accent: #d0a273;
-    --accent-soft: #2b2419;
+    --accent: #d4ab78;
+    --accent-bright: #d4ab78;
+    --accent-soft: #2a241b;
 
-    --income: #6bc0aa;
-    --income-soft: #17302b;
-    --expense: #e08a70;
-    --expense-soft: #33201a;
-    --warn: #d8b263;
+    --income: #72bda6;
+    --income-soft: #162c26;
+    --expense: #e08c73;
+    --expense-soft: #321f19;
+    --warn: #d9b567;
     --warn-soft: #2e2716;
 
-    --chart-income: #4f8ed2;
-    --chart-expense: #cc7538;
-    --chart-bar: #8fabdc;
-    --chart-grid: #2b3040;
-    --chart-axis: #767d90;
+    --chart-income: #8fa9d8;
+    --chart-expense: #d4ab78;
+    --chart-bar: #8fa9d8;
+    --chart-grid: #292e39;
+    --chart-axis: #767c89;
 
-    --ring: rgba(143, 171, 220, 0.36);
+    --ring: rgba(212, 171, 120, 0.35);
     --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
     --shadow: 0 1px 3px rgba(0, 0, 0, 0.45), 0 8px 24px -12px rgba(0, 0, 0, 0.6);
     --shadow-lg: 0 2px 6px rgba(0, 0, 0, 0.5), 0 24px 48px -20px rgba(0, 0, 0, 0.7);
@@ -90,40 +93,41 @@
 }
 
 :root[data-theme="dark"] {
-  --bg: #101219;
-  --surface: #181b24;
-  --surface-2: #1f2330;
-  --surface-3: #272c3b;
-  --border: #2b3040;
-  --border-strong: #3b4256;
+  --bg: #111318;
+  --surface: #181b22;
+  --surface-2: #1e222b;
+  --surface-3: #262b36;
+  --border: #292e39;
+  --border-strong: #3a4050;
 
-  --ink: #e9e7e2;
-  --ink-2: #b0b5c4;
-  --ink-3: #848b9e;
+  --ink: #ebe8e2;
+  --ink-2: #b3b6c0;
+  --ink-3: #868b97;
 
-  --primary: #8fabdc;
-  --primary-hover: #a3bce8;
-  --primary-ink: #101219;
-  --primary-soft: #232b3d;
-  --primary-soft-ink: #b9caea;
+  --primary: #d4ab78;
+  --primary-hover: #e0bd8f;
+  --primary-ink: #14161b;
+  --primary-soft: #2a241b;
+  --primary-soft-ink: #e3c49b;
 
-  --accent: #d0a273;
-  --accent-soft: #2b2419;
+  --accent: #d4ab78;
+  --accent-bright: #d4ab78;
+  --accent-soft: #2a241b;
 
-  --income: #6bc0aa;
-  --income-soft: #17302b;
-  --expense: #e08a70;
-  --expense-soft: #33201a;
-  --warn: #d8b263;
+  --income: #72bda6;
+  --income-soft: #162c26;
+  --expense: #e08c73;
+  --expense-soft: #321f19;
+  --warn: #d9b567;
   --warn-soft: #2e2716;
 
-  --chart-income: #4f8ed2;
-  --chart-expense: #cc7538;
-  --chart-bar: #8fabdc;
-  --chart-grid: #2b3040;
-  --chart-axis: #767d90;
+  --chart-income: #8fa9d8;
+  --chart-expense: #d4ab78;
+  --chart-bar: #8fa9d8;
+  --chart-grid: #292e39;
+  --chart-axis: #767c89;
 
-  --ring: rgba(143, 171, 220, 0.36);
+  --ring: rgba(212, 171, 120, 0.35);
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
   --shadow: 0 1px 3px rgba(0, 0, 0, 0.45), 0 8px 24px -12px rgba(0, 0, 0, 0.6);
   --shadow-lg: 0 2px 6px rgba(0, 0, 0, 0.5), 0 24px 48px -20px rgba(0, 0, 0, 0.7);
@@ -148,6 +152,7 @@
   --color-primary-soft-ink: var(--primary-soft-ink);
 
   --color-accent: var(--accent);
+  --color-accent-bright: var(--accent-bright);
   --color-accent-soft: var(--accent-soft);
 
   --color-income: var(--income);
@@ -161,6 +166,7 @@
   --color-chart-expense: var(--chart-expense);
   --color-chart-bar: var(--chart-bar);
 
+  --font-serif: var(--font-serif-kr), "Noto Serif KR", "AppleMyungjo", serif;
   --font-sans: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont,
     "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", system-ui, sans-serif;
 }
@@ -193,8 +199,35 @@ body {
 .card {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 14px;
+  border-radius: 16px;
   box-shadow: var(--shadow-sm);
+}
+
+/* 작은 머리글: "이번 주", "재정" 처럼 구역 이름을 적는 글자 */
+.eyebrow {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--ink-3);
+}
+
+/* 제목용 명조. 교회 이름과 화면 제목에만 쓴다. */
+.title-serif {
+  font-family: var(--font-serif);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+/* 목록 행: 카드 안에서 가는 선으로 나뉘는 줄 */
+.row-link {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.85rem 1.25rem;
+  transition: background-color 0.15s;
+}
+.row-link:hover {
+  background: var(--surface-2);
 }
 
 .field {
@@ -203,8 +236,9 @@ body {
   border: 1px solid var(--border-strong);
   background: var(--surface);
   color: var(--ink);
-  padding: 0.6rem 0.75rem;
-  font-size: 0.95rem;
+  padding: 0.65rem 0.8rem;
+  /* 16px 보다 작으면 아이폰 사파리가 입력할 때 화면을 확대해 버린다. */
+  font-size: 16px;
   line-height: 1.4;
   transition: border-color 0.15s, box-shadow 0.15s;
 }
@@ -254,7 +288,7 @@ textarea.field {
   font-size: 0.8rem;
   font-weight: 600;
   color: var(--ink-2);
-  margin-bottom: 0.35rem;
+  margin-bottom: 0.4rem;
   letter-spacing: -0.01em;
 }
 
@@ -264,14 +298,19 @@ textarea.field {
   justify-content: center;
   gap: 0.4rem;
   border-radius: 10px;
-  padding: 0.6rem 1rem;
+  min-height: 2.6rem;
+  padding: 0.6rem 1.05rem;
   font-size: 0.9rem;
   font-weight: 600;
   line-height: 1.2;
+  letter-spacing: -0.01em;
   border: 1px solid transparent;
   cursor: pointer;
-  transition: background-color 0.15s, border-color 0.15s, opacity 0.15s;
+  transition: background-color 0.15s, border-color 0.15s, opacity 0.15s, transform 0.1s;
   white-space: nowrap;
+}
+.btn:active:not(:disabled) {
+  transform: translateY(0.5px);
 }
 .btn:disabled {
   opacity: 0.55;
@@ -309,7 +348,8 @@ textarea.field {
   background: var(--expense-soft);
 }
 .btn-sm {
-  padding: 0.4rem 0.7rem;
+  min-height: 2.1rem;
+  padding: 0.4rem 0.75rem;
   font-size: 0.82rem;
   border-radius: 8px;
 }
@@ -336,12 +376,12 @@ textarea.field {
 .table th {
   text-align: left;
   font-weight: 600;
-  font-size: 0.78rem;
-  letter-spacing: 0.02em;
+  font-size: 0.75rem;
+  letter-spacing: 0.03em;
   color: var(--ink-3);
-  padding: 0.6rem 0.75rem;
+  padding: 0.7rem 0.9rem;
   border-bottom: 1px solid var(--border);
-  background: var(--surface-2);
+  background: transparent;
   white-space: nowrap;
 }
 .table th:first-child {
@@ -351,7 +391,7 @@ textarea.field {
   border-top-right-radius: 12px;
 }
 .table td {
-  padding: 0.7rem 0.75rem;
+  padding: 0.75rem 0.9rem;
   border-bottom: 1px solid var(--border);
   vertical-align: middle;
 }

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import { requireStaff, canManageFinance } from "@/lib/auth";
+import { requireFinance, canManageFinance } from "@/lib/auth";
 import { getYearSummary, monthRange } from "@/lib/finance";
 import { won, ymd } from "@/lib/format";
 import { Card, CardTitle, PageHeader, StatCard } from "@/components/ui";
@@ -15,7 +15,7 @@ export default async function FinancePage({
 }: {
   searchParams: Promise<{ year?: string }>;
 }) {
-  const staff = await requireStaff();
+  const staff = await requireFinance();
   const sp = await searchParams;
 
   const now = new Date();
@@ -78,7 +78,7 @@ export default async function FinancePage({
                 <Link href="/finance/bank" className="btn btn-ghost">
                   입출금 알림함
                   {bankPending > 0 && (
-                    <span className="tnum rounded-full bg-primary px-1.5 text-xs font-bold text-white">
+                    <span className="tnum rounded-full bg-primary px-1.5 text-xs font-bold text-primary-ink">
                       {bankPending}
                     </span>
                   )}

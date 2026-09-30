@@ -8,14 +8,17 @@ export function PageHeader({
   description,
   actions,
   back,
+  eyebrow,
 }: {
   title: string;
   description?: string;
   actions?: ReactNode;
   back?: { href: string; label: string };
+  /** 제목 위 작은 글자 (예: 날짜, 구역 이름) */
+  eyebrow?: string;
 }) {
   return (
-    <header className="mb-6">
+    <header className="mb-7">
       {back && (
         <Link
           href={back.href}
@@ -26,10 +29,11 @@ export function PageHeader({
       )}
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div className="min-w-0">
-          <h1 className="text-[1.55rem] font-bold leading-tight tracking-[-0.02em] text-ink">
+          {eyebrow && <p className="eyebrow mb-1.5">{eyebrow}</p>}
+          <h1 className="title-serif text-[1.6rem] leading-tight text-ink sm:text-[1.85rem]">
             {title}
           </h1>
-          {description && <p className="mt-1 text-sm text-ink-3">{description}</p>}
+          {description && <p className="mt-1.5 max-w-2xl text-sm leading-relaxed text-ink-3">{description}</p>}
         </div>
         {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
       </div>
@@ -62,7 +66,7 @@ export function CardTitle({
 }) {
   return (
     <div className="mb-4 flex items-center justify-between gap-3">
-      <h2 className="text-[0.95rem] font-bold tracking-[-0.01em] text-ink">{children}</h2>
+      <h2 className="text-[0.98rem] font-bold tracking-[-0.015em] text-ink">{children}</h2>
       {action}
     </div>
   );

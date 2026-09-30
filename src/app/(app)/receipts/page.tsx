@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import { requireStaff } from "@/lib/auth";
+import { requireFinance } from "@/lib/auth";
 import { getChurch } from "@/lib/church";
 import { RECEIPT_STATUS, type ReceiptStatus } from "@/lib/constants";
 import { won, ymd } from "@/lib/format";
@@ -42,7 +42,7 @@ export default async function ReceiptsPage({
 }: {
   searchParams: Promise<{ year?: string; status?: string; ok?: string; error?: string }>;
 }) {
-  const staff = await requireStaff();
+  const staff = await requireFinance();
   const sp = await searchParams;
 
   const now = new Date();

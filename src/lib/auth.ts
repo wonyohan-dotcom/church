@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import bcrypt from "bcryptjs";
-import { FINANCE_ROLES, STAFF_ROLES, type Role } from "./constants";
+import { FINANCE_ROLES, PASTORAL_ROLES, STAFF_ROLES, type Role } from "./constants";
 import {
   SESSION_COOKIE,
   SESSION_MAX_AGE,
@@ -68,6 +68,17 @@ export async function requireFinance(): Promise<SessionUser> {
   const user = await requireUser();
   if (!FINANCE_ROLES.includes(user.role)) redirect("/dashboard?error=forbidden");
   return user;
+}
+
+/** 심방·상담 기록 권한 (관리자·교역자) */
+export async function requirePastoral(): Promise<SessionUser> {
+  const user = await requireUser();
+  if (!PASTORAL_ROLES.includes(user.role)) redirect("/dashboard?error=forbidden");
+  return user;
+}
+
+export function canPastoral(role: Role) {
+  return PASTORAL_ROLES.includes(role);
 }
 
 export async function requireAdmin(): Promise<SessionUser> {

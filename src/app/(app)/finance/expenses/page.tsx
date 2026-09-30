@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import { requireStaff, canManageFinance } from "@/lib/auth";
+import { requireFinance, canManageFinance } from "@/lib/auth";
 import { PAYMENT_METHODS, type PaymentMethod } from "@/lib/constants";
 import { won, ymd } from "@/lib/format";
 import { Alert, Card, EmptyState, PageHeader, StatCard, TableWrap } from "@/components/ui";
@@ -28,7 +28,7 @@ export default async function ExpensesPage({
     ok?: string;
   }>;
 }) {
-  const staff = await requireStaff();
+  const staff = await requireFinance();
   const sp = await searchParams;
 
   const now = new Date();

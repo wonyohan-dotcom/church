@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { requireStaff } from "@/lib/auth";
+import { requireFinance } from "@/lib/auth";
 import { getChurch } from "@/lib/church";
 import { decryptSensitive } from "@/lib/crypto";
 import { RECEIPT_STATUS, type ReceiptStatus } from "@/lib/constants";
@@ -25,7 +25,7 @@ export default async function ReceiptDetailPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ ok?: string }>;
 }) {
-  const staff = await requireStaff();
+  const staff = await requireFinance();
   const { id } = await params;
   const sp = await searchParams;
 

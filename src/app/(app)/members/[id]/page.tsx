@@ -1,9 +1,12 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { requireStaff, canManageFinance } from "@/lib/auth";
-import { GENDERS, MEMBER_STATUS, type MemberStatus } from "@/lib/constants";
-import { age, phone as fmtPhone, won, ymd } from "@/lib/format";
+import { requireStaff, canManageFinance, canPastoral } from "@/lib/auth";
+import { GENDERS, MEMBER_STATUS, VISIT_KINDS, type MemberStatus } from "@/lib/constants";
+import { age, phone as fmtPhone, won, ymd, ymdDash } from "@/lib/format";
+import { memberSundays } from "@/lib/attendance";
+import { VisitList } from "@/components/visit-list";
+import { createVisit, deleteVisit } from "../../visits/actions";
 import {
   Alert,
   Avatar,
@@ -40,7 +43,10 @@ const MESSAGES: Record<string, { tone: "expense" | "income"; text: string }> = {
     text: "성도 계정이 발급되었습니다. 아이디와 비밀번호를 성도님께 안내해 주세요.",
   },
   "password-reset": { tone: "income", text: "비밀번호가 재설정되었습니다." },
+  visit: { tone: "income", text: "심방·상담 기록을 저장했습니다." },
 };
+
+const ERRORS_VISIT = "날짜와 내용을 적어 주세요.";
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -53,7 +59,7 @@ export default async function MemberDetailPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ error?: string; ok?: string }>;
+  searchParams: Promise<{ error?: string; ok?: string; write?: string }>;
 }) {
   const staff = await requireStaff();
   const { id } = await params;
@@ -106,7 +112,23 @@ export default async function MemberDetailPage({
       ])
     : [[], { _sum: { amount: null } }, []];
 
-  const message = sp.error
+  const pastoral = canPastoral(staff.role);
+  const [sundays, visits] = await Promise.all([
+    memberSundays(staff.churchId, member.id, 12),
+    pastoral
+      ? prisma.visit.findMany({
+          where: { memberId: member.id, churchId: staff.churchId },
+          orderBy: [{ date: "desc" }, { createdAt: "desc" }],
+          include: { createdBy: { select: { name: true } } },
+          take: 30,
+        })
+      : Promise.resolve([]),
+  ]);
+  const presentCount = sundays.filter((d) => d.present).length;
+
+  const message = sp.error === "visit"
+    ? { tone: "expense" as const, text: ERRORS_VISIT }
+    : sp.error
     ? MESSAGES[sp.error]
     : sp.ok
       ? MESSAGES[sp.ok]
@@ -330,6 +352,82 @@ export default async function MemberDetailPage({
                   </li>
                 ))}
               </ul>
+            </Card>
+          )}
+
+          <Card>
+            <CardTitle
+              action={
+                <Link href="/attendance" className="text-sm font-semibold text-primary">
+                  출석 현황
+                </Link>
+              }
+            >
+              최근 주일 출석
+            </CardTitle>
+            {sundays.length === 0 ? (
+              <p className="text-sm text-ink-3">아직 출석부가 없습니다.</p>
+            ) : (
+              <>
+                <div className="flex flex-wrap gap-1.5">
+                  {sundays.map((d) => (
+                    <span
+                      key={d.date.toISOString()}
+                      title={`${ymd(d.date)} ${d.present ? "출석" : "결석"}`}
+                      className={`flex h-9 w-9 flex-col items-center justify-center rounded-lg text-[0.62rem] font-semibold tnum ${
+                        d.present ? "bg-primary text-primary-ink" : "bg-surface-2 text-ink-3"
+                      }`}
+                    >
+                      {d.date.getMonth() + 1}/{d.date.getDate()}
+                    </span>
+                  ))}
+                </div>
+                <p className="mt-3 text-sm text-ink-2">
+                  최근 {sundays.length}주 중 <b className="tnum text-ink">{presentCount}</b>주 출석
+                </p>
+              </>
+            )}
+          </Card>
+
+          {pastoral && (
+            <Card>
+              <div id="visits" className="scroll-mt-24" />
+              <CardTitle>심방 · 상담</CardTitle>
+              <details className="mb-5 rounded-xl border border-line bg-surface-2/60 p-4" open={visits.length === 0 || sp.write === "1" || sp.error === "visit"}>
+                <summary className="cursor-pointer text-sm font-semibold text-primary">+ 새 기록 쓰기</summary>
+                <form action={createVisit.bind(null, member.id)} className="mt-3 space-y-3">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="label" htmlFor="visit-date">날짜</label>
+                      <input id="visit-date" type="date" name="date" className="field" defaultValue={ymdDash(new Date())} required />
+                    </div>
+                    <div>
+                      <label className="label" htmlFor="visit-kind">종류</label>
+                      <select id="visit-kind" name="kind" className="field" defaultValue="VISIT">
+                        {Object.entries(VISIT_KINDS).map(([v, l]) => (
+                          <option key={v} value={v}>{l}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="label" htmlFor="visit-content">나눈 이야기</label>
+                    <textarea id="visit-content" name="content" rows={4} className="field" required placeholder="가정 형편, 건강, 신앙 이야기 등" />
+                  </div>
+                  <div>
+                    <label className="label" htmlFor="visit-prayer">기도제목 (선택)</label>
+                    <textarea id="visit-prayer" name="prayer" rows={2} className="field" />
+                  </div>
+                  <div className="flex justify-end">
+                    <SubmitButton>기록 저장</SubmitButton>
+                  </div>
+                </form>
+              </details>
+              <VisitList
+                visits={visits.map((v) => ({ ...v, writer: v.createdBy?.name ?? null }))}
+                onDelete={(id) => deleteVisit.bind(null, id)}
+              />
+              <p className="mt-4 text-xs text-ink-3">이 기록은 관리자와 교역자만 볼 수 있습니다.</p>
             </Card>
           )}
 
