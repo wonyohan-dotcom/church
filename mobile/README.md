@@ -7,9 +7,59 @@
 
 - 앱 이름: 심플한교회관리
 - 번들 ID: `com.wonyohan.simplechurch`
-- 필요한 것: 맥(Mac mini), Xcode, 애플 개발자 계정
+
+앱을 올리는 방법은 두 가지입니다. **A(자동)** 을 권합니다. 맥이 없어도 됩니다.
 
 ---
+
+# A. 자동으로 올리기 (추천) — 처음 한 번만 설정
+
+GitHub 의 맥 서버가 앱을 만들어 TestFlight 에 올립니다.
+아래 값들은 **채팅이나 메일로 보내지 말고** GitHub 설정 화면에만 넣으세요.
+
+### A-1. 팀 ID 확인
+https://developer.apple.com/account → **멤버십 세부사항(Membership details)** → **팀 ID** (영문·숫자 10자리) 를 적어 둡니다.
+
+### A-2. 앱 ID(번들 ID) 등록
+1. https://developer.apple.com/account/resources/identifiers/list → 파란 **+**
+2. **App IDs** → Continue → **App** → Continue
+3. Description: `SimpleChurch` / Bundle ID: **Explicit** → `com.wonyohan.simplechurch`
+4. Continue → **Register**
+
+### A-3. App Store Connect 에 앱 만들기
+1. https://appstoreconnect.apple.com/apps → **+** → **신규 앱**
+2. 플랫폼 iOS / 이름 `심플한교회관리` (이미 쓰는 이름이라고 나오면 뒤에 교회 이름을 붙이세요)
+3. 기본 언어 한국어 / 번들 ID `com.wonyohan.simplechurch` / SKU `simplechurch` / 사용자 액세스 전체 → **생성**
+
+### A-4. 업로드용 API 키 만들기
+1. https://appstoreconnect.apple.com/access/integrations/api
+   (처음이면 **액세스 요청** 을 눌러 약관에 동의)
+2. **+** (API 키 생성) → 이름 `github` / 액세스 **관리자(Admin)** → 생성
+3. 화면 위쪽 **Issuer ID** 와 표의 **키 ID** 를 적어 두고, **API 키 다운로드** 로 `AuthKey_XXXX.p8` 파일을 받습니다.
+   (이 파일은 **한 번만** 받을 수 있습니다)
+
+### A-5. GitHub 에 값 넣기
+https://github.com/wonyohan-dotcom/church/settings/secrets/actions → **New repository secret** 을 4번 눌러 아래를 넣습니다.
+
+| Name | Secret (값) |
+|---|---|
+| `APPLE_TEAM_ID` | A-1 의 팀 ID |
+| `ASC_KEY_ID` | A-4 의 키 ID |
+| `ASC_ISSUER_ID` | A-4 의 Issuer ID |
+| `ASC_KEY_P8` | `.p8` 파일을 **텍스트편집기**로 열어 전체 선택(⌘A) → 복사(⌘C) → 붙여넣기 |
+
+### A-6. 올리기
+- https://github.com/wonyohan-dotcom/church/actions → 왼쪽 **아이폰 앱 올리기 (TestFlight)** → **Run workflow**
+- 15~25분 뒤 초록 체크가 뜨면, 다시 10~30분 뒤 App Store Connect 의 **TestFlight** 탭에 빌드가 나타납니다.
+- 이후에는 `mobile/` 폴더가 바뀔 때마다 자동으로 올라갑니다.
+
+### A-7. 내 아이폰에 설치
+1. App Store Connect → 앱 → **TestFlight** → 내부 테스트 옆 **+** → 그룹 만들기 → 본인 Apple ID 추가
+2. 아이폰에 **TestFlight** 앱 설치(App Store) → 초대 메일 또는 TestFlight 앱에서 **설치**
+
+---
+
+# B. 맥에서 직접 올리기 (자동이 안 될 때)
 
 ## 1. 맥에서 최신 코드 받기 (터미널)
 
@@ -33,7 +83,7 @@ Xcode 가 열리면서 처음 한 번은 필요한 부품(Capacitor)을 인터�
    - 목록에 없으면: Xcode 메뉴 → Settings → Accounts → 왼쪽 아래 + → Apple ID 로 로그인
 5. 빨간 오류가 없으면 성공입니다.
 
-## 3. App Store Connect 에 앱 만들기 (처음 한 번)
+## 3. App Store Connect 에 앱 만들기 (처음 한 번, A-3 을 했다면 건너뛰기)
 
 1. https://appstoreconnect.apple.com → **앱** → 왼쪽 위 **+** → **신규 앱**
 2. 플랫폼: iOS / 이름: 심플한교회관리 (이미 있으면 뒤에 교회 이름을 붙이세요)

@@ -1,0 +1,120 @@
+# 아이폰 앱을 만들어 TestFlight 에 올린다.
+#
+# 맥이 없어도 GitHub 의 맥 서버에서 돌아간다. 필요한 값은 저장소 설정의
+# Settings → Secrets and variables → Actions 에 한 번만 넣어 두면 된다.
+#   APPLE_TEAM_ID  : 애플 개발자 팀 ID (10자리, developer.apple.com → Membership)
+#   ASC_KEY_ID     : App Store Connect API 키 ID
+#   ASC_ISSUER_ID  : App Store Connect API 발급자(Issuer) ID
+#   ASC_KEY_P8     : 내려받은 AuthKey_XXXX.p8 파일 내용 전체
+# API 키는 '관리자(Admin)' 권한이어야 인증서·프로비저닝을 자동으로 만들 수 있다.
+#
+# 앱은 배포된 웹 주소를 띄우기만 하므로, 웹을 고칠 때는 다시 올릴 필요가 없다.
+# 아이콘·이름 등 mobile/ 폴더가 바뀌었을 때, 또는 Actions 탭에서 직접 실행할 때만 돈다.
+name: 아이폰 앱 올리기 (TestFlight)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [claude/church-management-app-shdx1d]
+    paths:
+      - "mobile/ios/**"
+      - "mobile/capacitor.config.json"
+      - ".github/workflows/ios-testflight.yml"
+
+concurrency:
+  group: ios-testflight
+  cancel-in-progress: false
+
+jobs:
+  upload:
+    runs-on: macos-15
+    timeout-minutes: 45
+    env:
+      PROJECT: mobile/ios/App/App.xcodeproj
+      SCHEME: App
+      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+      ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+      ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 필요한 값이 들어 있는지 확인
+        run: |
+          missing=""
+          for name in APPLE_TEAM_ID ASC_KEY_ID ASC_ISSUER_ID ASC_KEY_P8; do
+            if [ -z "${!name}" ]; then missing="$missing $name"; fi
+          done
+          if [ -n "$missing" ]; then
+            echo "::error::GitHub Secrets 에 다음 값이 없습니다:$missing (mobile/README.md 참고)"
+            exit 1
+          fi
+
+      - name: 최신 Xcode 선택
+        run: |
+          latest=$(ls -d /Applications/Xcode_*.app | grep -v beta | sort -V | tail -1)
+          sudo xcode-select -s "$latest"
+          xcodebuild -version
+
+      - name: API 키 파일 준비
+        run: |
+          mkdir -p "$RUNNER_TEMP/keys"
+          KEY_PATH="$RUNNER_TEMP/keys/AuthKey_${ASC_KEY_ID}.p8"
+          # 파일 내용을 그대로 붙여넣었든, base64 로 넣었든 모두 받는다.
+          if printf '%s' "$ASC_KEY_P8" | grep -q "BEGIN PRIVATE KEY"; then
+            printf '%s\n' "$ASC_KEY_P8" > "$KEY_PATH"
+          else
+            printf '%s' "$ASC_KEY_P8" | base64 --decode > "$KEY_PATH"
+          fi
+          chmod 600 "$KEY_PATH"
+          echo "KEY_PATH=$KEY_PATH" >> "$GITHUB_ENV"
+
+      - name: 앱 빌드 (Archive)
+        run: |
+          # 빌드 번호는 매번 커져야 한다. 실행 번호(와 재실행 횟수)를 쓴다.
+          BUILD_NUMBER="${GITHUB_RUN_NUMBER}.${GITHUB_RUN_ATTEMPT}"
+          xcodebuild archive \
+            -project "$PROJECT" \
+            -scheme "$SCHEME" \
+            -configuration Release \
+            -destination "generic/platform=iOS" \
+            -archivePath "$RUNNER_TEMP/App.xcarchive" \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$KEY_PATH" \
+            -authenticationKeyID "$ASC_KEY_ID" \
+            -authenticationKeyIssuerID "$ASC_ISSUER_ID" \
+            DEVELOPMENT_TEAM="$APPLE_TEAM_ID" \
+            CODE_SIGN_STYLE=Automatic \
+            CURRENT_PROJECT_VERSION="$BUILD_NUMBER" \
+            | tee "$RUNNER_TEMP/archive.log" | grep -E "error:|warning: .*sign|ARCHIVE (SUCCEEDED|FAILED)" || true
+          test -d "$RUNNER_TEMP/App.xcarchive" || { tail -80 "$RUNNER_TEMP/archive.log"; exit 1; }
+
+      - name: TestFlight 로 업로드
+        run: |
+          cat > "$RUNNER_TEMP/ExportOptions.plist" <<PLIST
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key><string>app-store-connect</string>
+            <key>destination</key><string>upload</string>
+            <key>teamID</key><string>${APPLE_TEAM_ID}</string>
+            <key>signingStyle</key><string>automatic</string>
+            <key>uploadSymbols</key><true/>
+            <key>manageAppVersionAndBuildNumber</key><false/>
+          </dict>
+          </plist>
+          PLIST
+          xcodebuild -exportArchive \
+            -archivePath "$RUNNER_TEMP/App.xcarchive" \
+            -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist" \
+            -exportPath "$RUNNER_TEMP/export" \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$KEY_PATH" \
+            -authenticationKeyID "$ASC_KEY_ID" \
+            -authenticationKeyIssuerID "$ASC_ISSUER_ID"
+          echo "### 업로드 완료 — 10~30분 뒤 App Store Connect 의 TestFlight 탭에 나타납니다." >> "$GITHUB_STEP_SUMMARY"
+
+      - name: API 키 파일 지우기
+        if: always()
+        run: rm -rf "$RUNNER_TEMP/keys"
