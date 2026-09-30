@@ -68,12 +68,23 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ token: str
   return NextResponse.json({ ok: true, 결과 });
 }
 
-/** 사파리에서 주소를 열어 연결이 되는지 확인할 수 있게 한다. */
+function escapeHtml(s: string) {
+  return s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
+}
+
+/**
+ * 사파리에서 주소를 열어 연결이 되는지 확인할 수 있게 한다.
+ * JSON 으로 돌려주면 아이폰 사파리가 한글을 깨뜨려 보여 주므로 간단한 화면으로 답한다.
+ */
 export async function GET(_req: NextRequest, ctx: { params: Promise<{ token: string }> }) {
   const { token } = await ctx.params;
   const church = await churchFor(token);
-  if (!church) {
-    return NextResponse.json({ ok: false, 결과: "주소가 올바르지 않습니다." }, { status: 404 });
-  }
-  return NextResponse.json({ ok: true, 결과: `${church.name} 입출금 알림 주소가 맞습니다.` });
+  const [icon, title, body] = church
+    ? ["✅", "연결 주소가 맞습니다", `${escapeHtml(church.name)} 입출금 알림을 받을 준비가 되었습니다. 이 주소를 단축어의 URL 칸에 그대로 넣으세요.`]
+    : ["⚠️", "주소가 올바르지 않습니다", "앱의 ‘알림 받기 설정’ 2번에서 주소를 다시 복사해 주세요. 새 주소를 만들었다면 이전 주소는 쓸 수 없습니다."];
+  const html = `<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>${title}</title><style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#f6f4ef;color:#142f3b;font:17px/1.6 -apple-system,system-ui,sans-serif;padding:24px;box-sizing:border-box}@media(prefers-color-scheme:dark){body{background:#111418;color:#eef1f4}}main{max-width:26rem;text-align:center}h1{font-size:1.35rem;margin:.4em 0}p{opacity:.8;margin:0}div{font-size:3rem}</style></head><body><main><div>${icon}</div><h1>${title}</h1><p>${body}</p></main></body></html>`;
+  return new NextResponse(html, {
+    status: church ? 200 : 404,
+    headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" },
+  });
 }
