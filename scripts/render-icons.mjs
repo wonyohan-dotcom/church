@@ -16,9 +16,13 @@
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 
 const src = readFileSync("src/components/logo.tsx", "utf8");
-const grab = (key) => new RegExp(`${key}:\\s*"([^"]+)"`).exec(src)[1];
-const P = { arch: grab("arch"), lower: grab("lower"), mullions: grab("mullions") };
-const C = { bg: grab("bg"), light: grab("light"), paper: grab("paper") };
+// LOGO_COLORS 와 LOGO_PATHS 에 같은 이름(cross)이 있으므로 덩어리별로 읽는다.
+const block = (name) => new RegExp(`${name}\\s*=\\s*\\{([\\s\\S]*?)\\}\\s*as const`).exec(src)[1];
+const grab = (text, key) => new RegExp(`${key}:\\s*"([^"]+)"`).exec(text)[1];
+const paths = block("LOGO_PATHS");
+const colors = block("LOGO_COLORS");
+const P = { letters: grab(paths, "letters"), cross: grab(paths, "cross") };
+const C = { bg: grab(colors, "bg"), gold: grab(colors, "gold"), cross: grab(colors, "cross") };
 
 /** scale: 도형 크기 비율(1 = 원래 크기), radius: 배경 모서리 */
 function svg({ size, scale = 1, radius = 0, bg = C.bg }) {
@@ -26,14 +30,13 @@ function svg({ size, scale = 1, radius = 0, bg = C.bg }) {
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="${size}" height="${size}">
   <rect width="100" height="100" rx="${radius}" fill="${bg}"/>
   <g transform="translate(${t} ${t}) scale(${scale})">
-    <path d="${P.arch}" fill="${C.light}"/>
-    <path d="${P.lower}" fill="${C.paper}"/>
-    <path d="${P.mullions}" fill="${bg}"/>
+    <path d="${P.letters}" fill="${C.gold}"/>
+    <path d="${P.cross}" stroke="${C.cross}" stroke-width="3.6" stroke-linecap="round" fill="none"/>
   </g>
 </svg>`;
 }
 
-writeFileSync("src/app/icon.svg", svg({ size: 64, radius: 23 }) + "\n");
+writeFileSync("src/app/icon.svg", svg({ size: 64, radius: 26 }) + "\n");
 
 let chromium;
 try {
@@ -62,7 +65,7 @@ await png(svg({ size: 512, scale: 0.8 }), 512, 512, "public/icons/maskable-512.p
 const ios = "mobile/ios/App/App/Assets.xcassets";
 await png(svg({ size: 1024 }), 1024, 1024, `${ios}/AppIcon.appiconset/AppIcon-512@2x.png`);
 const splash = `<div style="width:2732px;height:2732px;background:#f7f4ee;display:flex;align-items:center;justify-content:center">
-  ${svg({ size: 400, radius: 23 })}</div>`;
+  ${svg({ size: 400, radius: 26 })}</div>`;
 for (const n of ["splash-2732x2732.png", "splash-2732x2732-1.png", "splash-2732x2732-2.png"]) {
   await png(splash, 2732, 2732, `${ios}/Splash.imageset/${n}`);
 }

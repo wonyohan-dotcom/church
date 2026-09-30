@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { APP_NAME, LOGO_COLORS, LOGO_PATHS, LogoMark } from "./logo";
+import { APP_NAME, LOGO_COLORS, LogoMark } from "./logo";
 
 /**
  * 로그인 · 가입 신청 · 교회 등록 화면의 틀.
@@ -43,13 +43,14 @@ export function AuthShell({
 }
 
 function BrandPanel() {
-  const { bg, light, paper } = LOGO_COLORS;
+  const { bg, gold } = LOGO_COLORS;
+  const paper = "#f4efe6";
   return (
     <aside
       className="relative hidden overflow-hidden lg:flex lg:flex-col lg:justify-between lg:p-12"
       style={{ background: bg, color: paper }}
     >
-      {/* 고딕 창을 크게, 선으로만 겹쳐 그린 무늬 */}
+      {/* 교회 창(고딕 아치)을 크게, 선으로만 겹쳐 그린 무늬 */}
       <svg
         viewBox="0 0 100 100"
         className="pointer-events-none absolute -bottom-[18%] -right-[22%] h-[125%] w-auto opacity-[0.16]"
@@ -60,20 +61,15 @@ function BrandPanel() {
             key={inset}
             d={`M${30 + inset * 0.6} 100V50C${30 + inset * 0.6} 34 ${38.5 + inset * 0.3} ${22 + inset * 0.4} 50 ${15 + inset}C${61.5 - inset * 0.3} ${22 + inset * 0.4} ${70 - inset * 0.6} 34 ${70 - inset * 0.6} 50V100`}
             fill="none"
-            stroke={light}
+            stroke={gold}
             strokeWidth="0.35"
           />
         ))}
-        <path d="M50 25V100M30 48H70" stroke={light} strokeWidth="0.35" />
+        <path d="M50 25V100M30 48H70" stroke={gold} strokeWidth="0.35" />
       </svg>
 
       <div className="relative flex items-center gap-3">
-        <svg viewBox="0 0 100 100" width={40} height={40} aria-hidden>
-          <rect width="100" height="100" rx="23" fill={paper} fillOpacity="0.08" />
-          <path d={LOGO_PATHS.arch} fill={light} />
-          <path d={LOGO_PATHS.lower} fill={paper} />
-          <path d={LOGO_PATHS.mullions} fill={bg} />
-        </svg>
+        <LogoMark size={40} decorative className="rounded-[10px] ring-1 ring-white/15" />
         <span className="text-[0.95rem] font-semibold tracking-[-0.01em]">{APP_NAME}</span>
       </div>
 

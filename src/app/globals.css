@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 /* ─────────────────────────────────────────────
-   "빛이 드는 창" — 로고의 남색 · 금빛 · 종이색에서 가져온 팔레트
+   심플한신앙과 같은 집안 — 청록빛 남색 · 금빛 · 종이색 팔레트
    화면은 주보나 장부처럼 차분하게: 넓은 여백, 가는 구분선, 강조는 한 곳에만.
    모든 색은 CSS 변수로 두고 다크모드에서는 값만 바꾼다.
    다크모드의 주 색은 남색 대신 금빛을 쓴다(어두운 바탕에서 남색은 묻힌다).
@@ -19,15 +19,15 @@
   --ink-2: #474c59;
   --ink-3: #7d818c;
 
-  --primary: #1c2a47;
-  --primary-hover: #26375c;
+  --primary: #142f3b;
+  --primary-hover: #1c4050;
   --primary-ink: #ffffff;
-  --primary-soft: #eceef3;
-  --primary-soft-ink: #1c2a47;
+  --primary-soft: #e8f0ef;
+  --primary-soft-ink: #142f3b;
 
   --accent: #9c7248;
-  --accent-bright: #d4ab78;
-  --accent-soft: #f6eee2;
+  --accent-bright: #f2a95a;
+  --accent-soft: #fbf0e2;
 
   --income: #2c6a58;
   --income-soft: #e6f1ec;
@@ -37,13 +37,13 @@
   --warn-soft: #f8f0dc;
 
   /* 차트 — 남색(수입)과 황토(지출). 밝기 차이가 커서 색각이상에서도 구분된다. */
-  --chart-income: #2b4474;
+  --chart-income: #1d5566;
   --chart-expense: #cf9a66;
-  --chart-bar: #1c2a47;
+  --chart-bar: #142f3b;
   --chart-grid: #ebe6dc;
   --chart-axis: #9a9ea8;
 
-  --ring: rgba(28, 42, 71, 0.28);
+  --ring: rgba(20, 47, 59, 0.28);
   --shadow-sm: 0 1px 2px rgba(25, 28, 36, 0.04);
   --shadow: 0 1px 2px rgba(25, 28, 36, 0.05), 0 6px 20px -10px rgba(25, 28, 36, 0.12);
   --shadow-lg: 0 2px 6px rgba(25, 28, 36, 0.06), 0 24px 48px -20px rgba(25, 28, 36, 0.22);
@@ -62,14 +62,14 @@
     --ink-2: #b3b6c0;
     --ink-3: #868b97;
 
-    --primary: #d4ab78;
-    --primary-hover: #e0bd8f;
+    --primary: #f7b56b;
+    --primary-hover: #f9c58a;
     --primary-ink: #14161b;
     --primary-soft: #2a241b;
-    --primary-soft-ink: #e3c49b;
+    --primary-soft-ink: #f7c790;
 
-    --accent: #d4ab78;
-    --accent-bright: #d4ab78;
+    --accent: #f7b56b;
+    --accent-bright: #f7b56b;
     --accent-soft: #2a241b;
 
     --income: #72bda6;
@@ -79,13 +79,13 @@
     --warn: #d9b567;
     --warn-soft: #2e2716;
 
-    --chart-income: #8fa9d8;
-    --chart-expense: #d4ab78;
-    --chart-bar: #8fa9d8;
+    --chart-income: #5fb7ad;
+    --chart-expense: #f7b56b;
+    --chart-bar: #5fb7ad;
     --chart-grid: #292e39;
     --chart-axis: #767c89;
 
-    --ring: rgba(212, 171, 120, 0.35);
+    --ring: rgba(247, 181, 107, 0.35);
     --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
     --shadow: 0 1px 3px rgba(0, 0, 0, 0.45), 0 8px 24px -12px rgba(0, 0, 0, 0.6);
     --shadow-lg: 0 2px 6px rgba(0, 0, 0, 0.5), 0 24px 48px -20px rgba(0, 0, 0, 0.7);
@@ -104,14 +104,14 @@
   --ink-2: #b3b6c0;
   --ink-3: #868b97;
 
-  --primary: #d4ab78;
-  --primary-hover: #e0bd8f;
+  --primary: #f7b56b;
+  --primary-hover: #f9c58a;
   --primary-ink: #14161b;
   --primary-soft: #2a241b;
-  --primary-soft-ink: #e3c49b;
+  --primary-soft-ink: #f7c790;
 
-  --accent: #d4ab78;
-  --accent-bright: #d4ab78;
+  --accent: #f7b56b;
+  --accent-bright: #f7b56b;
   --accent-soft: #2a241b;
 
   --income: #72bda6;
@@ -121,13 +121,13 @@
   --warn: #d9b567;
   --warn-soft: #2e2716;
 
-  --chart-income: #8fa9d8;
-  --chart-expense: #d4ab78;
-  --chart-bar: #8fa9d8;
+  --chart-income: #5fb7ad;
+  --chart-expense: #f7b56b;
+  --chart-bar: #5fb7ad;
   --chart-grid: #292e39;
   --chart-axis: #767c89;
 
-  --ring: rgba(212, 171, 120, 0.35);
+  --ring: rgba(247, 181, 107, 0.35);
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
   --shadow: 0 1px 3px rgba(0, 0, 0, 0.45), 0 8px 24px -12px rgba(0, 0, 0, 0.6);
   --shadow-lg: 0 2px 6px rgba(0, 0, 0, 0.5), 0 24px 48px -20px rgba(0, 0, 0, 0.7);
