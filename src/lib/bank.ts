@@ -5,6 +5,7 @@ import { notifyRoles } from "./push";
 import { won } from "./format";
 import { parseBankMessage, splitMessages } from "./bank-sms";
 import { accountTag, balanceGaps, gapKey, parseGapKey } from "./bank-balance";
+import { autoLinkGivers } from "./offering-givers";
 import type { BankAlertModel } from "@/generated/prisma/models";
 import type { Prisma } from "@/generated/prisma/client";
 
@@ -423,6 +424,10 @@ export async function recordAlert(
         include: { account: true },
       });
       await prisma.bankAlert.update({ where: { id: alert.id }, data: { offeringId: offering.id } });
+      // 교인을 정하지 않았으면 입금자명으로 찾는다 (예: "김동진최창일" → 두 분 모두)
+      if (!input.memberId) {
+        await autoLinkGivers(alert.churchId, offering.id, alert.counterparty, input.accountId);
+      }
       await logAudit({
         churchId: alert.churchId,
         action: "CREATE",

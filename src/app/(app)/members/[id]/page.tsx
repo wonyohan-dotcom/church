@@ -5,6 +5,7 @@ import { requireStaff, canManageFinance, canPastoral } from "@/lib/auth";
 import { GENDERS, MEMBER_STATUS, VISIT_KINDS, type MemberStatus } from "@/lib/constants";
 import { age, phone as fmtPhone, won, ymd, ymdDash } from "@/lib/format";
 import { memberSundays } from "@/lib/attendance";
+import { giverInclude, giverLabel, givenBy, giversOf } from "@/lib/offering-givers";
 import { VisitList } from "@/components/visit-list";
 import { createVisit, deleteVisit } from "../../visits/actions";
 import {
@@ -90,14 +91,14 @@ export default async function MemberDetailPage({
   const [recentOfferings, yearTotal, receipts] = showFinance
     ? await Promise.all([
         prisma.offering.findMany({
-          where: { memberId: member.id },
-          include: { account: true },
+          where: givenBy(member.id),
+          include: { account: true, ...giverInclude },
           orderBy: { date: "desc" },
           take: 8,
         }),
         prisma.offering.aggregate({
           where: {
-            memberId: member.id,
+            ...givenBy(member.id),
             date: {
               gte: new Date(thisYear, 0, 1),
               lt: new Date(thisYear + 1, 0, 1),
@@ -463,7 +464,10 @@ export default async function MemberDetailPage({
                         <span className="block text-sm font-medium text-ink">
                           {o.account.name}
                         </span>
-                        <span className="tnum block text-xs text-ink-3">{ymd(o.date)}</span>
+                        <span className="tnum block text-xs text-ink-3">
+                          {ymd(o.date)}
+                          {giversOf(o).length > 1 && ` · 함께: ${giverLabel(o)}`}
+                        </span>
                       </span>
                       <span className="tnum shrink-0 text-sm font-semibold text-ink">
                         {won(o.amount)}

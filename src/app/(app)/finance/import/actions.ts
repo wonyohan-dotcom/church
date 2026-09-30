@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { requireAdmin, requireFinance } from "@/lib/auth";
 import { logAudit } from "@/lib/church";
 import { parseDate, won, ymdDash } from "@/lib/format";
+import { canLinkGivers, matchGivers } from "@/lib/givers";
 import type { ImportResult } from "../../members/import/actions";
 
 const Row = z.object({
@@ -49,9 +50,11 @@ export async function importFinance(
   });
   const accountKey = (type: string, name: string) => `${type}|${name.replace(/\s/g, "")}`;
   const accountId = new Map(accounts.map((a) => [accountKey(a.type, a.name), a.id]));
-  // 헌금 항목에만 교인을 연결한다. 목사님 개인 계좌에서 옮긴 내부이체가
-  // 그분의 헌금으로 잡혀 기부금영수증에 들어가면 안 된다.
-  const givingAccount = new Set(accounts.filter((a) => a.isOffering).map((a) => a.id));
+  // 내부이체·환불·이자에는 교인을 연결하지 않는다. 목사님 개인 계좌에서 옮긴 돈이
+  // 그분의 헌금으로 잡히면 안 된다. (기부금영수증은 항목의 '공제 대상' 표시로 따로 거른다)
+  const canLink = new Set(
+    accounts.filter((a) => a.type === "INCOME" && canLinkGivers(a.name)).map((a) => a.id),
+  );
   const nextCode = (type: "INCOME" | "EXPENSE") => {
     const prefix = type === "INCOME" ? "1" : "2";
     const nums = accounts.filter((a) => a.code.startsWith(prefix)).map((a) => Number(a.code) || 0);
@@ -84,17 +87,15 @@ export async function importFinance(
     });
     accounts.push({ id: created.id, name, type, code, isOffering: offering });
     accountId.set(accountKey(type, name), created.id);
-    if (offering) givingAccount.add(created.id);
+    if (type === "INCOME" && canLinkGivers(name)) canLink.add(created.id);
     result.newAccounts.push(`${type === "INCOME" ? "수입" : "지출"} · ${name}`);
   }
 
-  // 헌금자 이름 → 교인 (동명이인이 없을 때만)
+  // 헌금자 이름 → 교인. "이숙종 십일조", "김동진최창일" 처럼 적혀 있어도 찾는다. (동명이인은 잇지 않는다)
   const members = await prisma.member.findMany({
     where: { churchId: user.churchId },
     select: { id: true, name: true },
   });
-  const byName = new Map<string, string | null>();
-  for (const m of members) byName.set(m.name, byName.has(m.name) ? null : m.id);
 
   // 이미 있는 기록(같은 기간)과 겹치는지. 같은 내용이 여러 번 있을 수 있으니 개수로 센다.
   const dates = rows.map((r) => r.date).sort();
@@ -113,19 +114,25 @@ export async function importFinance(
   ]);
   const counts = new Map<string, number>();
   const bump = (k: string) => counts.set(k, (counts.get(k) ?? 0) + 1);
-  for (const o of oldOfferings) bump(`IN|${ymdDash(o.date)}|${o.amount}|${o.accountId}|${o.memberId ?? o.donorName ?? ""}`);
+  // 헌금은 적힌 이름으로 비교한다. (이름이 교인 이름과 똑같으면 donorName 을 비워 두었다)
+  const oldName = (o: { memberId: string | null; donorName: string | null }) =>
+    o.donorName ?? (o.memberId ? (members.find((m) => m.id === o.memberId)?.name ?? "") : "");
+  for (const o of oldOfferings) bump(`IN|${ymdDash(o.date)}|${o.amount}|${o.accountId}|${oldName(o)}`);
   for (const e of oldExpenses) bump(`OUT|${ymdDash(e.date)}|${e.amount}|${e.accountId}|${e.payee ?? ""}`);
 
+  const nameOf = new Map(members.map((m) => [m.id, m.name]));
   const offerings = [];
+  const coGivers: string[][] = []; // offerings 와 같은 순서: 함께 드린 교인들
   const expenses = [];
   for (const r of rows) {
     const type = r.direction === "IN" ? "INCOME" : "EXPENSE";
     const acc = accountId.get(accountKey(type, r.account ?? FALLBACK[r.direction]))!;
     const date = parseDate(r.date)!;
     if (r.direction === "IN") {
-      const memberId =
-        r.name && givingAccount.has(acc) ? (byName.get(r.name.replace(/\s/g, "")) ?? null) : null;
-      const key = `IN|${r.date}|${r.amount}|${acc}|${memberId ?? r.name ?? ""}`;
+      // 이름이 교인이면 잇는다 (후원금·참가비 포함). 내부이체·환불·이자는 빼고.
+      const givers = r.name && canLink.has(acc) ? matchGivers(r.name, members) : [];
+      const memberId = givers[0] ?? null;
+      const key = `IN|${r.date}|${r.amount}|${acc}|${r.name ?? ""}`;
       if ((counts.get(key) ?? 0) > 0) {
         counts.set(key, counts.get(key)! - 1);
         result.skipped.push({ line: r.line, reason: "이미 입력된 헌금" });
@@ -137,11 +144,13 @@ export async function importFinance(
         amount: r.amount,
         accountId: acc,
         memberId,
-        donorName: memberId ? null : r.name,
+        // 통장·엑셀에 적힌 이름은 교인과 이어도 남겨 둔다 (예: "김동진최창일.감사").
+        donorName: memberId && r.name === nameOf.get(memberId) ? null : r.name,
         method: r.method ?? "CASH",
         note: r.description,
         createdById: user.id,
       });
+      coGivers.push(givers.slice(1));
     } else {
       const payee = r.payee ?? r.name;
       const key = `OUT|${r.date}|${r.amount}|${acc}|${payee ?? ""}`;
@@ -163,7 +172,11 @@ export async function importFinance(
     }
   }
 
-  if (offerings.length) await prisma.offering.createMany({ data: offerings });
+  if (offerings.length) {
+    const created = await prisma.offering.createManyAndReturn({ data: offerings, select: { id: true } });
+    const links = created.flatMap((o, i) => coGivers[i].map((memberId) => ({ offeringId: o.id, memberId })));
+    if (links.length) await prisma.offeringGiver.createMany({ data: links, skipDuplicates: true });
+  }
   if (expenses.length) await prisma.expense.createMany({ data: expenses });
   result.created = offerings.length + expenses.length;
 

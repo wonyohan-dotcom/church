@@ -69,8 +69,8 @@ model Church {
 // ─────────────────────────────────────────────
 
 model User {
-  id       String @id @default(cuid())
-  loginId  String @unique
+  id       String  @id @default(cuid())
+  loginId  String  @unique
   password String
   name     String
   phone    String?
@@ -88,11 +88,11 @@ model User {
   member   Member? @relation("MemberAccount", fields: [memberId], references: [id], onDelete: SetNull)
 
   // 가입 신청 처리 기록
-  approvedAt   DateTime?
-  approvedById String?
-  approvedBy   User?     @relation("Approver", fields: [approvedById], references: [id], onDelete: SetNull)
-  approvedUsers User[]   @relation("Approver")
-  rejectReason String?
+  approvedAt    DateTime?
+  approvedById  String?
+  approvedBy    User?     @relation("Approver", fields: [approvedById], references: [id], onDelete: SetNull)
+  approvedUsers User[]    @relation("Approver")
+  rejectReason  String?
 
   pushSubscriptions PushSubscription[]
 
@@ -195,11 +195,12 @@ model Member {
   previousChurch String?
   note           String?
 
-  offerings  Offering[]
-  receipts   DonationReceipt[]
-  user       User?             @relation("MemberAccount")
-  attendance AttendanceCheck[]
-  visits     Visit[]
+  offerings   Offering[]
+  coOfferings OfferingGiver[]
+  receipts    DonationReceipt[]
+  user        User?             @relation("MemberAccount")
+  attendance  AttendanceCheck[]
+  visits      Visit[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -252,7 +253,12 @@ model Offering {
 
   memberId  String?
   member    Member? @relation(fields: [memberId], references: [id], onDelete: SetNull)
-  donorName String? // 미등록 헌금자 이름
+  donorName String? // 미등록 헌금자 이름 (교인과 이은 뒤에도 통장·엑셀에 적힌 이름 그대로 둔다)
+
+  // 함께 드린 다른 교인들 (예: "김동진최창일" → memberId 김동진, coGivers 최창일)
+  coGivers        OfferingGiver[]
+  // 사람이 헌금자를 직접 골랐으면 true. 이름으로 자동 연결할 때 건드리지 않는다.
+  giversConfirmed Boolean         @default(false)
 
   method String  @default("CASH") // CASH 현금 | TRANSFER 계좌이체 | CARD 카드
   note   String?
@@ -268,6 +274,18 @@ model Offering {
   @@index([churchId, date])
   @@index([memberId])
   @@index([accountId])
+}
+
+// 헌금을 함께 드린 교인 (대표 헌금자 Offering.memberId 말고 나머지)
+// 교인별 헌금 내역에는 함께 드린 헌금도 보이지만, 기부금영수증은 대표 헌금자에게만 들어간다.
+model OfferingGiver {
+  offeringId String
+  offering   Offering @relation(fields: [offeringId], references: [id], onDelete: Cascade)
+  memberId   String
+  member     Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@id([offeringId, memberId])
+  @@index([memberId])
 }
 
 model Expense {
@@ -418,7 +436,7 @@ model HistoryPhoto {
 // ─────────────────────────────────────────────
 
 model AttendanceRecord {
-  id           String  @id @default(cuid())
+  id           String   @id @default(cuid())
   date         DateTime
   service      String   @default("SUNDAY")
   visitorCount Int      @default(0) // 교적에 없는 방문자·새신자 수
@@ -531,8 +549,8 @@ model PushSubscription {
   userId String
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  label     String? // 어떤 기기인지 알아보기 위한 메모
-  createdAt DateTime @default(now())
+  label      String? // 어떤 기기인지 알아보기 위한 메모
+  createdAt  DateTime  @default(now())
   lastUsedAt DateTime?
 
   @@index([userId])

@@ -96,14 +96,14 @@ export function StatCard({
           ? "text-primary"
           : "text-ink";
   return (
-    <div className="card p-4 sm:p-5">
+    <div className="stat card p-4 sm:p-5">
       <div className="flex items-start justify-between gap-2">
         <p className="text-[0.78rem] font-semibold tracking-[0.01em] text-ink-3">{label}</p>
         {icon && <span className="text-ink-3">{icon}</span>}
       </div>
-      {/* 좁은 화면에서 '원'이 다음 줄로 넘어가지 않도록 글자를 한 단계 줄인다. */}
+      {/* 금액이 칸보다 길면 칸 너비에 맞춰 글자를 줄인다 (globals.css .stat-value). */}
       <p
-        className={`tnum mt-2 whitespace-nowrap text-[1.15rem] font-bold leading-tight tracking-[-0.02em] sm:text-[1.4rem] lg:text-[1.5rem] ${toneClass}`}
+        className={`stat-value tnum mt-2 whitespace-nowrap font-bold leading-tight tracking-[-0.02em] ${toneClass}`}
       >
         {value}
       </p>

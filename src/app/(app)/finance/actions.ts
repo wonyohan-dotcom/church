@@ -9,6 +9,7 @@ import { deleteImage, saveImage } from "@/lib/upload";
 import { parseDate, parseIntOr, str, won } from "@/lib/format";
 import { ownAccountId, ownMemberId } from "@/lib/tenant";
 import { linkAlert, unlinkAlert } from "@/lib/bank";
+import { autoLinkGivers, findLinkable, setGivers } from "@/lib/offering-givers";
 
 /** 입출금 알림함에서 넘어온 입력이면 에러 화면에서도 알림을 이어서 보여준다. */
 function bankQuery(formData: FormData) {
@@ -44,6 +45,8 @@ export async function createOffering(formData: FormData) {
     },
     include: { account: true },
   });
+  // 교인을 고르지 않고 이름만 적었으면 (예: "김동진최창일") 이름으로 교인을 찾아 잇는다.
+  if (!memberId) await autoLinkGivers(user.churchId, offering.id, offering.donorName, accountId);
 
   await logAudit({
     churchId: user.churchId,
@@ -76,7 +79,10 @@ export async function createOffering(formData: FormData) {
 export async function updateOffering(id: string, formData: FormData) {
   const user = await requireFinance();
 
-  const existing = await prisma.offering.findUnique({ where: { id } });
+  const existing = await prisma.offering.findUnique({
+    where: { id },
+    include: { coGivers: { select: { memberId: true } } },
+  });
   if (!existing || existing.churchId !== user.churchId) redirect("/finance/offerings");
 
   const date = parseDate(formData.get("date"));
@@ -100,6 +106,11 @@ export async function updateOffering(id: string, formData: FormData) {
       note: str(formData.get("note")),
     },
   });
+  // 대표 헌금자를 바꿨으면: 함께 드린 교인은 그대로 두고, 교인을 비웠으면 무명으로.
+  if (memberId !== existing.memberId) {
+    const others = existing.coGivers.map((g) => g.memberId).filter((m) => m !== memberId);
+    await setGivers(user.churchId, id, memberId ? [memberId, ...others] : [], { confirmed: true });
+  }
 
   await logAudit({
     churchId: user.churchId,
@@ -139,6 +150,83 @@ export async function deleteOffering(id: string) {
   revalidatePath("/finance");
   revalidatePath("/finance/offerings");
   redirect("/finance/offerings?ok=deleted");
+}
+
+/**
+ * 헌금자를 고른다 (헌금 줄을 꾹 눌러 여는 창). ids[0] 이 대표, 나머지는 함께 드린 교인.
+ * 빈 배열이면 무명으로 둔다.
+ */
+export async function setOfferingGivers(
+  offeringId: string,
+  memberIds: string[],
+): Promise<{ ok: boolean }> {
+  const user = await requireFinance();
+  const offering = await prisma.offering.findFirst({
+    where: { id: offeringId, churchId: user.churchId },
+    include: { account: true },
+  });
+  if (!offering || !Array.isArray(memberIds)) return { ok: false };
+
+  const ids = await setGivers(user.churchId, offeringId, memberIds.map(String).slice(0, 20), {
+    confirmed: true,
+  });
+  const names = ids.length
+    ? (await prisma.member.findMany({ where: { id: { in: ids } }, select: { id: true, name: true } }))
+        .sort((a, b) => ids.indexOf(a.id) - ids.indexOf(b.id))
+        .map((m) => m.name)
+        .join(", ")
+    : "무명";
+  await logAudit({
+    churchId: user.churchId,
+    action: "UPDATE",
+    entity: "Offering",
+    entityId: offeringId,
+    summary: `헌금자 지정: ${offering.account.name} ${won(offering.amount)} → ${names}`,
+    userId: user.id,
+  });
+
+  revalidatePath("/finance/offerings");
+  revalidatePath("/finance");
+  for (const id of new Set([...ids, ...(offering.memberId ? [offering.memberId] : [])])) {
+    revalidatePath(`/members/${id}`);
+  }
+  return { ok: true };
+}
+
+/** 적힌 이름으로 교인을 찾아, 고른 묶음을 한꺼번에 잇는다. */
+export async function linkOfferingsByName(formData: FormData) {
+  const user = await requireFinance();
+  const picked = new Set(formData.getAll("name").map(String));
+  const groups = (await findLinkable(user.churchId)).filter((g) => picked.has(g.donorName));
+
+  let count = 0;
+  for (const g of groups) {
+    const [lead, ...rest] = g.memberIds;
+    await prisma.$transaction([
+      prisma.offering.updateMany({
+        where: { id: { in: g.offeringIds }, churchId: user.churchId, memberId: null },
+        data: { memberId: lead },
+      }),
+      prisma.offeringGiver.createMany({
+        data: g.offeringIds.flatMap((offeringId) => rest.map((memberId) => ({ offeringId, memberId }))),
+        skipDuplicates: true,
+      }),
+    ]);
+    count += g.offeringIds.length;
+  }
+
+  if (count) {
+    await logAudit({
+      churchId: user.churchId,
+      action: "UPDATE",
+      entity: "Offering",
+      summary: `이름으로 헌금자 연결: ${count}건`,
+      userId: user.id,
+    });
+  }
+  revalidatePath("/finance/offerings");
+  revalidatePath("/finance");
+  redirect(`/finance/offerings/link?ok=${count}`);
 }
 
 /* ── 지출 ────────────────────────────────── */

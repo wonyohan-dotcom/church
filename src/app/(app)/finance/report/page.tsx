@@ -3,7 +3,13 @@ import { requireFinance, canManageFinance } from "@/lib/auth";
 import { getChurch } from "@/lib/church";
 import { getYearSummary } from "@/lib/finance";
 import { won } from "@/lib/format";
-import { Card, CardTitle, PageHeader, StatCard, TableWrap } from "@/components/ui";
+import {
+  Card,
+  CardTitle,
+  PageHeader,
+  StatCard,
+  TableWrap,
+} from "@/components/ui";
 import { PrintButton, SubmitButton } from "@/components/form";
 import { YearSelect } from "@/components/year-select";
 import { saveBudget } from "../actions";
@@ -40,8 +46,14 @@ export default async function ReportPage({
   const incomeAccounts = accounts.filter((a) => a.type === "INCOME");
   const expenseAccounts = accounts.filter((a) => a.type === "EXPENSE");
 
-  const totalBudgetIncome = incomeAccounts.reduce((s, a) => s + (budgetOf.get(a.id) ?? 0), 0);
-  const totalBudgetExpense = expenseAccounts.reduce((s, a) => s + (budgetOf.get(a.id) ?? 0), 0);
+  const totalBudgetIncome = incomeAccounts.reduce(
+    (s, a) => s + (budgetOf.get(a.id) ?? 0),
+    0,
+  );
+  const totalBudgetExpense = expenseAccounts.reduce(
+    (s, a) => s + (budgetOf.get(a.id) ?? 0),
+    0,
+  );
 
   const balance = summary.totalIncome - summary.totalExpense;
   const canEdit = canManageFinance(staff.role);
@@ -56,7 +68,11 @@ export default async function ReportPage({
           back={{ href: "/finance", label: "회계 관리" }}
           actions={
             <>
-              <YearSelect year={year} years={years} basePath="/finance/report" />
+              <YearSelect
+                year={year}
+                years={years}
+                basePath="/finance/report"
+              />
               <PrintButton />
             </>
           }
@@ -74,9 +90,17 @@ export default async function ReportPage({
       </div>
 
       <div className="print-page">
-        <div className="mb-5 grid grid-cols-3 gap-3">
-          <StatCard label="총수입" value={won(summary.totalIncome)} tone="income" />
-          <StatCard label="총지출" value={won(summary.totalExpense)} tone="expense" />
+        <div className="mb-5 grid grid-cols-1 gap-3 min-[420px]:grid-cols-3 print:grid-cols-3">
+          <StatCard
+            label="총수입"
+            value={won(summary.totalIncome)}
+            tone="income"
+          />
+          <StatCard
+            label="총지출"
+            value={won(summary.totalExpense)}
+            tone="expense"
+          />
           <StatCard
             label="차인 잔액"
             value={won(balance)}
@@ -85,7 +109,9 @@ export default async function ReportPage({
         </div>
 
         <div className="mb-5">
-          <h2 className="mb-2.5 px-1 text-[0.95rem] font-bold text-ink">수입 결산</h2>
+          <h2 className="mb-2.5 px-1 text-[0.95rem] font-bold text-ink">
+            수입 결산
+          </h2>
           <ReportTable
             rows={incomeAccounts.map((a) => ({
               code: a.code,
@@ -100,7 +126,9 @@ export default async function ReportPage({
         </div>
 
         <div className="mb-5">
-          <h2 className="mb-2.5 px-1 text-[0.95rem] font-bold text-ink">지출 결산</h2>
+          <h2 className="mb-2.5 px-1 text-[0.95rem] font-bold text-ink">
+            지출 결산
+          </h2>
           <ReportTable
             rows={expenseAccounts.map((a) => ({
               code: a.code,
@@ -115,9 +143,11 @@ export default async function ReportPage({
         </div>
 
         <div className="mb-5">
-          <h2 className="mb-2.5 px-1 text-[0.95rem] font-bold text-ink">월별 집계</h2>
+          <h2 className="mb-2.5 px-1 text-[0.95rem] font-bold text-ink">
+            월별 집계
+          </h2>
           <TableWrap>
-            <table className="table">
+            <table className="table whitespace-nowrap">
               <thead>
                 <tr>
                   <th>월</th>
@@ -137,8 +167,12 @@ export default async function ReportPage({
                       <td className="tnum">{m.label}</td>
                       <td className="tnum text-right">{won(m.income)}</td>
                       <td className="tnum text-right">{won(m.expense)}</td>
-                      <td className="tnum text-right">{won(m.income - m.expense)}</td>
-                      <td className="tnum text-right font-semibold">{won(cumulative)}</td>
+                      <td className="tnum text-right">
+                        {won(m.income - m.expense)}
+                      </td>
+                      <td className="tnum text-right font-semibold">
+                        {won(cumulative)}
+                      </td>
                     </tr>
                   );
                 })}
@@ -205,50 +239,112 @@ function ReportTable({
   totalBudget: number;
   totalActual: number;
 }) {
+  const rate = (actual: number, budget: number) =>
+    budget > 0 ? `${Math.round((actual / budget) * 100)}%` : "-";
   return (
-    <TableWrap>
-      <table className="table">
-        <thead>
-          <tr>
-            <th>코드</th>
-            <th>과목</th>
-            <th className="text-right">예산</th>
-            <th className="text-right">결산</th>
-            <th className="text-right">차액</th>
-            <th className="text-right">집행률</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((r) => (
-            <tr key={r.code}>
-              <td className="tnum text-ink-3">{r.code}</td>
-              <td>
-                <span className="font-medium text-ink">{r.name}</span>
-                {r.category && <span className="block text-xs text-ink-3">{r.category}</span>}
-              </td>
-              <td className="tnum text-right text-ink-2">{won(r.budget)}</td>
-              <td className="tnum text-right font-semibold text-ink">{won(r.actual)}</td>
-              <td className="tnum text-right text-ink-2">{won(r.budget - r.actual)}</td>
-              <td className="tnum text-right text-ink-2">
-                {r.budget > 0 ? `${Math.round((r.actual / r.budget) * 100)}%` : "-"}
-              </td>
-            </tr>
-          ))}
-          <tr>
-            <td />
-            <td className="font-bold text-ink">합계</td>
-            <td className="tnum text-right font-bold text-ink">{won(totalBudget)}</td>
-            <td className="tnum text-right font-bold text-ink">{won(totalActual)}</td>
-            <td className="tnum text-right font-bold text-ink">
-              {won(totalBudget - totalActual)}
-            </td>
-            <td className="tnum text-right font-bold text-ink">
-              {totalBudget > 0 ? `${Math.round((totalActual / totalBudget) * 100)}%` : "-"}
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </TableWrap>
+    <>
+      {/* 휴대폰: 과목마다 한 줄씩 (표는 칸이 많아 좁은 화면에서 글자가 세로로 찌그러진다) */}
+      <ul className="card divide-y divide-line sm:hidden print:hidden">
+        {rows.map((r) => (
+          <li key={r.code} className="px-4 py-3">
+            <div className="flex items-baseline justify-between gap-3">
+              <p className="min-w-0 truncate font-medium text-ink">
+                {r.name}
+                {r.category && (
+                  <span className="ml-1.5 text-xs text-ink-3">
+                    {r.category}
+                  </span>
+                )}
+              </p>
+              <p className="tnum shrink-0 font-semibold text-ink">
+                {won(r.actual)}
+              </p>
+            </div>
+            {r.budget > 0 && (
+              <p className="tnum mt-0.5 text-right text-xs text-ink-3">
+                예산 {won(r.budget)} · 차액 {won(r.budget - r.actual)} ·{" "}
+                {rate(r.actual, r.budget)}
+              </p>
+            )}
+          </li>
+        ))}
+        <li className="flex items-baseline justify-between gap-3 bg-surface-2 px-4 py-3">
+          <p className="font-bold text-ink">합계</p>
+          <div className="text-right">
+            <p className="tnum font-bold text-ink">{won(totalActual)}</p>
+            {totalBudget > 0 && (
+              <p className="tnum text-xs text-ink-3">
+                예산 {won(totalBudget)} · {rate(totalActual, totalBudget)}
+              </p>
+            )}
+          </div>
+        </li>
+      </ul>
+
+      <div className="hidden sm:block print:block">
+        <TableWrap>
+          <table className="table whitespace-nowrap">
+            <thead>
+              <tr>
+                <th>코드</th>
+                <th>과목</th>
+                <th className="text-right">예산</th>
+                <th className="text-right">결산</th>
+                <th className="text-right">차액</th>
+                <th className="text-right">집행률</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((r) => (
+                <tr key={r.code}>
+                  <td className="tnum text-ink-3">{r.code}</td>
+                  <td>
+                    <span className="font-medium text-ink">{r.name}</span>
+                    {r.category && (
+                      <span className="block text-xs text-ink-3">
+                        {r.category}
+                      </span>
+                    )}
+                  </td>
+                  <td className="tnum text-right text-ink-2">
+                    {won(r.budget)}
+                  </td>
+                  <td className="tnum text-right font-semibold text-ink">
+                    {won(r.actual)}
+                  </td>
+                  <td className="tnum text-right text-ink-2">
+                    {won(r.budget - r.actual)}
+                  </td>
+                  <td className="tnum text-right text-ink-2">
+                    {r.budget > 0
+                      ? `${Math.round((r.actual / r.budget) * 100)}%`
+                      : "-"}
+                  </td>
+                </tr>
+              ))}
+              <tr>
+                <td />
+                <td className="font-bold text-ink">합계</td>
+                <td className="tnum text-right font-bold text-ink">
+                  {won(totalBudget)}
+                </td>
+                <td className="tnum text-right font-bold text-ink">
+                  {won(totalActual)}
+                </td>
+                <td className="tnum text-right font-bold text-ink">
+                  {won(totalBudget - totalActual)}
+                </td>
+                <td className="tnum text-right font-bold text-ink">
+                  {totalBudget > 0
+                    ? `${Math.round((totalActual / totalBudget) * 100)}%`
+                    : "-"}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </TableWrap>
+      </div>
+    </>
   );
 }
 
