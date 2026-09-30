@@ -114,13 +114,17 @@ say(`부제·개인정보처리방침 주소 (${infoLoc?.attributes.locale ?? L.
   const decl = await get(`/v1/appInfos/${info.id}/ageRatingDeclaration`);
   const current = decl.data.attributes;
   const answer = {};
+  // 답하지 않을 항목: 어린이 연령대, 한국(GRAC) 등급 번호, 등급 안내 주소, 옛 방식 등급 재지정(V2 가 있을 때)
+  const SKIP = new Set(["kidsAgeBand", "gracRatingClassificationNumber", "developerAgeRatingInfoUrl"]);
+  if ("ageRatingOverrideV2" in current) SKIP.add("ageRatingOverride");
+  const LEVELS = ["NONE", "INFREQUENT_OR_MILD", "FREQUENT_OR_INTENSE", "INFREQUENT", "FREQUENT"];
   for (const [k, v] of Object.entries(current)) {
-    if (k === "kidsAgeBand") continue;
+    if (SKIP.has(k) || /Url$|Number$/.test(k)) continue;
     if (/Override/i.test(k)) answer[k] = "NONE";
     else if (typeof v === "boolean") answer[k] = false;
-    else if (typeof v === "string") answer[k] = "NONE";
+    else if (typeof v === "string" && LEVELS.includes(v)) answer[k] = "NONE";
   }
-  const nullKeys = Object.keys(current).filter((k) => current[k] === null && k !== "kidsAgeBand" && !(k in answer));
+  const nullKeys = Object.keys(current).filter((k) => current[k] === null && !SKIP.has(k) && !/Url$|Number$/.test(k) && !(k in answer));
   // 아직 답하지 않은 항목(null)은 이름으로 짐작한다: 등급 항목은 NONE, 예/아니오 항목은 false.
   const ENUM = /Themes|Humor|Violence|violence|Content|contents|contests|Contests|Gambling(Simulated)?$|Information|References|Nudity|Weapons|Override/;
   for (const k of nullKeys) answer[k] = ENUM.test(k) && k !== "gambling" && k !== "userGeneratedContent" ? "NONE" : false;
@@ -130,7 +134,11 @@ say(`부제·개인정보처리방침 주소 (${infoLoc?.attributes.locale ?? L.
       say("연령 등급: 모든 항목 없음 (4+)");
       break;
     } catch (e) {
-      const bad = e.errors.map((x) => x.source?.pointer?.split("/").pop()).filter((k) => k && k in answer);
+      // 오류가 가리키는 항목: pointer 가 있으면 그것, 없으면 설명에 따옴표로 나온 이름
+      const bad = e.errors
+        .flatMap((x) => [x.source?.pointer?.split("/").pop(), ...[...(x.detail ?? "").matchAll(/'(\w+)'/g)].map((m) => m[1])])
+        .filter((k, i, arr) => k && k in answer && arr.indexOf(k) === i)
+        .slice(0, 1);
       if (!bad.length) { note(`연령 등급 설정 실패: ${e.message}`); break; }
       for (const k of bad) {
         // 형식이 틀렸으면 다른 형식으로, 그래도 안 되면 뺀다.
