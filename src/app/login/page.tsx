@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ next?: string }>;
+  searchParams: Promise<{ next?: string; demo?: string; deleted?: string }>;
 }) {
   const session = await getSession();
   if (session) {
@@ -19,7 +19,7 @@ export default async function LoginPage({
     redirect(STAFF_ROLES.includes(session.role as Role) ? "/dashboard" : "/my");
   }
 
-  const { next } = await searchParams;
+  const { next, demo, deleted } = await searchParams;
 
   return (
     <AuthShell
@@ -42,9 +42,23 @@ export default async function LoginPage({
         </>
       }
     >
+      {deleted && (
+        <p className="mb-4 rounded-lg bg-income-soft px-3 py-2.5 text-sm font-medium text-income">
+          {deleted === "church" ? "교회와 모든 자료를 삭제했습니다." : "계정을 삭제했습니다."} 그동안 함께해 주셔서 감사합니다.
+        </p>
+      )}
+      {demo === "fail" && (
+        <p className="mb-4 rounded-lg bg-expense-soft px-3 py-2.5 text-sm font-medium text-expense">
+          체험용 교회를 여는 중 문제가 생겼습니다. 잠시 뒤 다시 눌러 주세요.
+        </p>
+      )}
       <div className="card p-6">
         <LoginForm next={next ?? ""} />
       </div>
+      <a href="/demo" className="btn btn-ghost mt-3 w-full py-3">
+        로그인 없이 체험해 보기
+      </a>
+      <p className="mt-2 text-center text-xs text-ink-3">예시 자료가 든 체험용 교회로 들어갑니다.</p>
     </AuthShell>
   );
 }

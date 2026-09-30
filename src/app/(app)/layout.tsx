@@ -2,6 +2,7 @@ import { requireStaff, canManageFinance } from "@/lib/auth";
 import { getChurch } from "@/lib/church";
 import { prisma } from "@/lib/prisma";
 import { MobileTabBar, MobileTopBar, Sidebar } from "@/components/nav";
+import { DemoBanner } from "@/components/demo-banner";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const user = await requireStaff();
@@ -25,6 +26,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <Sidebar churchName={church.name} user={{ name: user.name, role: user.role }} badges={badges} />
       <div className="flex min-w-0 flex-1 flex-col">
         <MobileTopBar churchName={church.name} />
+        {church.isDemo && <DemoBanner />}
         <main className="mx-auto w-full max-w-6xl flex-1 px-4 pt-6 pb-28 sm:px-6 lg:px-10 lg:pt-10 lg:pb-14">
           {children}
         </main>

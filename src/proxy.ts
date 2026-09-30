@@ -3,7 +3,7 @@ import { SESSION_COOKIE, verifySessionToken } from "@/lib/session";
 import { STAFF_ROLES, type Role } from "@/lib/constants";
 
 /** 로그인하지 않아도 볼 수 있는 화면 */
-const PUBLIC_PATHS = ["/login", "/signup", "/register-church"];
+const PUBLIC_PATHS = ["/login", "/signup", "/register-church", "/privacy", "/support", "/demo"];
 /** 승인 대기 중인 계정도 볼 수 있는 화면 */
 const PENDING_PATHS = ["/pending"];
 /** 성도(MEMBER) 역할도 접근 가능한 경로 */

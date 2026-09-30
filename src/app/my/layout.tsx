@@ -6,6 +6,7 @@ import { IconLogout } from "@/components/icons";
 import { LogoMark } from "@/components/logo";
 import { ThemeToggle } from "@/components/nav";
 import { MyNav } from "./my-nav";
+import { DemoBanner } from "@/components/demo-banner";
 
 export default async function MyLayout({ children }: { children: React.ReactNode }) {
   const user = await requireUser();
@@ -43,7 +44,13 @@ export default async function MyLayout({ children }: { children: React.ReactNode
         </div>
       </header>
 
+      {church.isDemo && <DemoBanner />}
       <main className="mx-auto w-full max-w-3xl px-4 pt-6 pb-16">{children}</main>
+      <footer className="no-print mx-auto flex max-w-3xl flex-wrap gap-x-4 gap-y-1 px-4 pb-10 text-xs text-ink-3">
+        <Link href="/my/account" className="hover:text-primary">내 정보 · 계정 삭제</Link>
+        <Link href="/privacy" className="hover:text-primary">개인정보처리방침</Link>
+        <Link href="/support" className="hover:text-primary">고객지원</Link>
+      </footer>
     </div>
   );
 }

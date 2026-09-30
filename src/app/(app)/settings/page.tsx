@@ -50,6 +50,10 @@ const MESSAGES: Record<string, { tone: "income" | "expense" | "warn"; text: stri
     text: "그 교적에는 이미 다른 계정이 연결되어 있습니다.",
   },
   self: { tone: "warn", text: "본인 계정은 정지할 수 없습니다." },
+  demo: {
+    tone: "warn",
+    text: "체험용 교회에서는 교회 정보와 계정(비밀번호·권한·정지)을 바꿀 수 없습니다. 다른 기능은 자유롭게 써 보세요.",
+  },
   "last-admin": {
     tone: "warn",
     text: "마지막 관리자의 권한은 낮출 수 없습니다. 다른 관리자를 먼저 지정해 주세요.",

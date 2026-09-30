@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { ReactNode } from "react";
 import { APP_NAME, LOGO_COLORS, LogoMark } from "./logo";
 
@@ -36,6 +37,10 @@ export function AuthShell({
           )}
           {children}
           {footer && <div className="mt-6 space-y-2.5 text-center text-sm lg:text-left">{footer}</div>}
+          <p className="mt-10 flex justify-center gap-4 text-xs text-ink-3 lg:justify-start">
+            <Link href="/privacy" className="hover:text-primary">개인정보처리방침</Link>
+            <Link href="/support" className="hover:text-primary">고객지원</Link>
+          </p>
         </div>
       </div>
     </main>

@@ -4,7 +4,7 @@ import { getChurch } from "@/lib/church";
 import { ROLES } from "@/lib/constants";
 import { visibleSections } from "@/components/nav-config";
 import { ThemeToggle } from "@/components/nav";
-import { IconChevronRight, IconLogout, IconUser } from "@/components/icons";
+import { IconBook, IconChevronRight, IconLogout, IconSettings, IconUser } from "@/components/icons";
 
 export const metadata = { title: "전체 메뉴" };
 
@@ -57,6 +57,20 @@ export default async function MorePage() {
                 <IconUser width={19} height={19} />
               </span>
               <span className="flex-1 font-semibold text-ink">내 헌금·영수증 (성도 화면)</span>
+              <IconChevronRight width={16} height={16} className="text-ink-3" />
+            </Link>
+            <Link href="/my/account" className="row-link">
+              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-surface-2 text-primary">
+                <IconSettings width={19} height={19} />
+              </span>
+              <span className="flex-1 font-semibold text-ink">내 정보 · 계정 삭제</span>
+              <IconChevronRight width={16} height={16} className="text-ink-3" />
+            </Link>
+            <Link href="/privacy" className="row-link">
+              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-surface-2 text-primary">
+                <IconBook width={19} height={19} />
+              </span>
+              <span className="flex-1 font-semibold text-ink">개인정보처리방침 · 고객지원</span>
               <IconChevronRight width={16} height={16} className="text-ink-3" />
             </Link>
             <div className="row-link">

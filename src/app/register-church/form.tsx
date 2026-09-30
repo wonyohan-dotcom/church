@@ -84,6 +84,16 @@ export function RegisterChurchForm() {
         </p>
       )}
 
+      <label className="flex items-start gap-2.5 text-sm text-ink-2">
+        <input type="checkbox" name="agree" value="1" required className="mt-0.5 size-4 shrink-0" />
+        <span>
+          <a href="/privacy" target="_blank" rel="noreferrer" className="font-semibold text-primary underline">
+            개인정보처리방침
+          </a>
+          을 읽었고, 개인정보 수집·이용에 동의합니다. (필수)
+        </span>
+      </label>
+
       <SubmitButton className="btn btn-primary w-full py-3" pendingLabel="등록 중…">
         교회 등록하고 시작하기
       </SubmitButton>

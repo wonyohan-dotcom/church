@@ -98,10 +98,10 @@ export function Sidebar({
           <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-surface-3 text-sm font-bold text-ink-2">
             {user.name.slice(0, 1)}
           </span>
-          <div className="min-w-0 flex-1">
+          <Link href="/my/account" className="min-w-0 flex-1 rounded-lg hover:opacity-80" title="내 정보 · 계정 삭제">
             <p className="truncate text-sm font-semibold text-ink">{user.name}</p>
-            <p className="text-[0.72rem] text-ink-3">{ROLES[user.role]}</p>
-          </div>
+            <p className="text-[0.72rem] text-ink-3">{ROLES[user.role]} · 내 정보</p>
+          </Link>
           <ThemeToggle />
           <form action="/api/logout" method="post">
             <button type="submit" className="btn btn-quiet btn-sm" title="로그아웃" aria-label="로그아웃">

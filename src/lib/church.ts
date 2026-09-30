@@ -43,3 +43,10 @@ export function assertSameChurch(
   if (!record || record.churchId !== churchId) notFound();
   return record;
 }
+
+/** 이 교회에 나 말고 다른 (활성) 관리자가 몇 명인지. 마지막 관리자는 계정만 지울 수 없다. */
+export async function otherAdminCount(churchId: string, userId: string) {
+  return prisma.user.count({
+    where: { churchId, role: "ADMIN", status: "ACTIVE", id: { not: userId } },
+  });
+}

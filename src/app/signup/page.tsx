@@ -13,7 +13,7 @@ export default async function SignupPage() {
   if (session) redirect("/");
 
   const churches = await prisma.church.findMany({
-    where: { joinOpen: true },
+    where: { joinOpen: true, isDemo: false },
     select: { id: true, name: true, address: true },
     orderBy: { name: "asc" },
   });

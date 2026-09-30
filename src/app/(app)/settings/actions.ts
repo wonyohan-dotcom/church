@@ -8,9 +8,16 @@ import { logAudit } from "@/lib/church";
 import { deleteImage, saveImage } from "@/lib/upload";
 import { str } from "@/lib/format";
 import { ROLES, type Role } from "@/lib/constants";
+import { isDemoChurch } from "@/lib/demo";
+
+/** 체험용 교회에서는 교회 정보와 계정을 바꾸지 못하게 한다 (다른 체험자가 들어오지 못하게 되지 않도록). */
+async function blockDemo(churchId: string) {
+  if (await isDemoChurch(churchId)) redirect("/settings?error=demo");
+}
 
 export async function updateChurch(formData: FormData) {
   const admin = await requireAdmin();
+  await blockDemo(admin.churchId);
 
   const current = await prisma.church.findUnique({ where: { id: admin.churchId } });
 
@@ -75,6 +82,7 @@ export async function updateChurch(formData: FormData) {
 
 export async function createStaffUser(formData: FormData) {
   const admin = await requireAdmin();
+  await blockDemo(admin.churchId);
 
   const loginId = str(formData.get("loginId"));
   const name = str(formData.get("name"));
@@ -117,6 +125,7 @@ export async function createStaffUser(formData: FormData) {
 /** 계정 사용을 막거나 다시 풀어 준다. */
 export async function toggleUserActive(id: string) {
   const admin = await requireAdmin();
+  await blockDemo(admin.churchId);
 
   const user = await prisma.user.findUnique({ where: { id } });
   if (!user || user.churchId !== admin.churchId) return;
@@ -145,6 +154,7 @@ export async function toggleUserActive(id: string) {
 /** 앱 사용 범위(권한)를 바꾼다. */
 export async function changeUserRole(id: string, formData: FormData) {
   const admin = await requireAdmin();
+  await blockDemo(admin.churchId);
 
   const role = (str(formData.get("role")) ?? "") as Role;
   if (!(role in ROLES)) return;
@@ -176,6 +186,7 @@ export async function changeUserRole(id: string, formData: FormData) {
 
 export async function resetUserPassword(id: string, formData: FormData) {
   const admin = await requireAdmin();
+  await blockDemo(admin.churchId);
 
   const password = String(formData.get("password") ?? "");
   if (password.length < 8) redirect("/settings?error=user-input");

@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { isDemoChurch } from "@/lib/demo";
 import { hashPassword, requireStaff } from "@/lib/auth";
 import { logAudit } from "@/lib/church";
 import { deleteImage, saveImage } from "@/lib/upload";
@@ -173,6 +174,8 @@ export async function deleteMember(id: string) {
  */
 export async function createMemberAccount(memberId: string, formData: FormData) {
   const admin = await requireStaff();
+  // 체험용 교회에서는 성도 계정을 만들거나 비밀번호를 바꾸지 못한다.
+  if (await isDemoChurch(admin.churchId)) redirect("/settings?error=demo");
 
   const loginId = str(formData.get("loginId"));
   const password = String(formData.get("password") ?? "");
@@ -218,6 +221,8 @@ export async function createMemberAccount(memberId: string, formData: FormData) 
 
 export async function resetMemberPassword(memberId: string, formData: FormData) {
   const admin = await requireStaff();
+  // 체험용 교회에서는 성도 계정을 만들거나 비밀번호를 바꾸지 못한다.
+  if (await isDemoChurch(admin.churchId)) redirect("/settings?error=demo");
 
   const password = String(formData.get("password") ?? "");
   if (password.length < 8) redirect(`/members/${memberId}?error=account-input`);
