@@ -38,7 +38,7 @@ setInterval(() => (jwt = token()), 10 * 60 * 1000).unref();
 
 class ApiError extends Error {
   constructor(status, errors, where) {
-    super(`${where} → ${status}\n${(errors ?? []).map((e) => `   - ${e.code}: ${e.title} — ${e.detail ?? ""}${e.source?.pointer ? ` (${e.source.pointer})` : ""}`).join("\n")}`);
+    super(`${where} → ${status}${(errors ?? []).length > 6 ? ` (오류 ${errors.length}개 중 6개만 표시)` : ""}\n${(errors ?? []).slice(0, 6).map((e) => `   - ${e.code}: ${e.title} — ${e.detail ?? ""}${e.source?.pointer ? ` (${e.source.pointer})` : ""}`).join("\n")}`);
     this.status = status;
     this.errors = errors ?? [];
   }
@@ -172,19 +172,26 @@ try {
   if (avail?.data) {
     say("판매 국가: 이미 정해져 있음");
   } else {
+    // 모든 나라를 적고, 판매할 나라만 available 로 둔다.
+    const all = [];
+    for (let next = `/v1/territories?limit=200`; next; ) {
+      const page = await get(next);
+      all.push(...page.data.map((t) => t.id));
+      next = page.links?.next;
+    }
     await post(`/v2/appAvailabilities`, {
       data: {
         type: "appAvailabilities",
         attributes: { availableInNewTerritories: false },
         relationships: {
           app: rel("apps", app.id),
-          territoryAvailabilities: { data: L.territories.map((t) => ({ type: "territoryAvailabilities", id: `\${${t}}` })) },
+          territoryAvailabilities: { data: all.map((t) => ({ type: "territoryAvailabilities", id: `\${${t}}` })) },
         },
       },
-      included: L.territories.map((t) => ({
+      included: all.map((t) => ({
         type: "territoryAvailabilities",
         id: `\${${t}}`,
-        attributes: { available: true },
+        attributes: { available: L.territories.includes(t) },
         relationships: { territory: rel("territories", t) },
       })),
     });
@@ -295,7 +302,16 @@ say(`설명·키워드 (${vLoc.attributes.locale})`);
 
 // ── 7. 심사 정보 (연락처 · 체험 계정 · 메모) ───────────
 {
-  const phone = process.env.APP_REVIEW_PHONE?.trim();
+  // 010-1234-5678 처럼 넣어도 애플 형식(+82 10 1234 5678)으로 바꾼다.
+  const raw = process.env.APP_REVIEW_PHONE?.trim() ?? "";
+  const digits = raw.replace(/[^\d+]/g, "");
+  const phone = !digits
+    ? ""
+    : digits.startsWith("+")
+      ? digits
+      : digits.startsWith("0")
+        ? `+82 ${digits.slice(1, 3)} ${digits.slice(3, -4)} ${digits.slice(-4)}`
+        : `+${digits}`;
   const attrs = {
     contactFirstName: L.review.firstName,
     contactLastName: L.review.lastName,
@@ -307,6 +323,7 @@ say(`설명·키워드 (${vLoc.attributes.locale})`);
     ...(phone ? { contactPhone: phone } : {}),
   };
   if (!phone) note("APP_REVIEW_PHONE 비밀값이 없어 심사 연락처 전화번호를 넣지 못했습니다.");
+  try {
   const cur = await get(`/v1/appStoreVersions/${version.id}/appStoreReviewDetail`).catch((e) => (e.status === 404 ? null : Promise.reject(e)));
   if (cur?.data) {
     await patch(`/v1/appStoreReviewDetails/${cur.data.id}`, { data: { type: "appStoreReviewDetails", id: cur.data.id, attributes: attrs } });
@@ -316,6 +333,9 @@ say(`설명·키워드 (${vLoc.attributes.locale})`);
     });
   }
   say("심사 정보: 연락처 · 체험 계정 · 메모");
+  } catch (e) {
+    note(`심사 정보 설정 실패: ${e.message}`);
+  }
 }
 
 // ── 8. 심사 제출 ───────────────────────────────
