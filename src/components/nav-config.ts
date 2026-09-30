@@ -42,6 +42,7 @@ export const NAV_SECTIONS: NavSection[] = [
     items: [
       { href: "/finance", label: "회계", icon: IconWallet, roles: FINANCE_ROLES },
       { href: "/finance/ledger", label: "수입·지출 내역", icon: IconSearch, roles: FINANCE_ROLES },
+      { href: "/finance/offerings/link", label: "헌금자 이름 연결", icon: IconUsers, roles: FINANCE_ROLES },
       { href: "/finance/bank", label: "입출금 알림", icon: IconBank, roles: FINANCE_ROLES },
       { href: "/receipts", label: "기부금영수증", icon: IconReceipt, roles: FINANCE_ROLES },
     ],

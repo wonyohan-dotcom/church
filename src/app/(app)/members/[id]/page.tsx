@@ -478,6 +478,19 @@ export default async function MemberDetailPage({
                 </ul>
               )}
 
+              <Link
+                href={`/finance/offerings/link?q=${encodeURIComponent(member.name)}`}
+                className="mt-4 flex items-center justify-between gap-3 rounded-xl border border-line px-4 py-3 text-sm hover:bg-surface-2"
+              >
+                <span>
+                  <b className="font-semibold text-ink">이름이 적힌 헌금 찾아 잇기</b>
+                  <span className="block text-xs text-ink-3">
+                    ‘{member.name}’{/^[가-힣]{3}$/.test(member.name) && `, ‘${member.name.slice(1)}’`} 로 적힌 통장·엑셀 헌금을 찾습니다
+                  </span>
+                </span>
+                <span className="shrink-0 font-semibold text-primary">찾기 →</span>
+              </Link>
+
               {receipts.length > 0 && (
                 <div className="mt-5">
                   <p className="label">기부금영수증</p>

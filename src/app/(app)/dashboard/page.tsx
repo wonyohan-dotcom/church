@@ -4,6 +4,7 @@ import { requireStaff, canManageFinance, canPastoral } from "@/lib/auth";
 import { getChurch } from "@/lib/church";
 import { getYearSummary, monthRange } from "@/lib/finance";
 import { findAbsentees, sundayTrend } from "@/lib/attendance";
+import { findLinkable } from "@/lib/offering-givers";
 import { ABSENCE_ALERT_WEEKS, HISTORY_CATEGORIES, NEWCOMER_DAYS, type HistoryCategory } from "@/lib/constants";
 import { age, won, ymd } from "@/lib/format";
 import { Alert, Avatar, Badge, Card, CardTitle, PageHeader } from "@/components/ui";
@@ -129,6 +130,9 @@ export default async function DashboardPage({
     return d >= now.getDate() && d < now.getDate() + 7;
   });
 
+  // 이름으로 교인과 이을 수 있는 헌금 (회계 담당자에게만)
+  const linkable = finance ? (await findLinkable(staff.churchId)).reduce((n, g) => n + g.offeringIds.length, 0) : 0;
+
   const todos = [
     pendingSignups > 0 && {
       href: "/settings",
@@ -141,6 +145,12 @@ export default async function DashboardPage({
       icon: <IconBank width={18} height={18} />,
       text: "은행 입출금 알림을 장부에 기록해 주세요",
       count: `${pendingBank}건`,
+    },
+    linkable > 0 && {
+      href: "/finance/offerings/link",
+      icon: <IconUsers width={18} height={18} />,
+      text: "이름으로 교인과 이을 수 있는 헌금이 있습니다",
+      count: `${linkable}건`,
     },
     pendingReceipts > 0 && {
       href: "/receipts",

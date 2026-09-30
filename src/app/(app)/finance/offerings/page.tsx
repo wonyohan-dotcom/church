@@ -162,10 +162,19 @@ export default async function OfferingsPage({
         }
         actions={
           canEdit && (
-            <Link href="/finance/offerings/new" className="btn btn-primary">
-              <IconPlus width={16} height={16} />
-              헌금 입력
-            </Link>
+            <>
+              <Link
+                href={member ? `/finance/offerings/link?q=${encodeURIComponent(member.name)}` : "/finance/offerings/link"}
+                className="btn btn-ghost"
+              >
+                <IconUsers width={16} height={16} />
+                {member ? `‘${member.name}’ 이름 헌금 찾기` : "헌금자 이름 연결"}
+              </Link>
+              <Link href="/finance/offerings/new" className="btn btn-primary">
+                <IconPlus width={16} height={16} />
+                헌금 입력
+              </Link>
+            </>
           )
         }
       />
