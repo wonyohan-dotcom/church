@@ -291,6 +291,9 @@ export async function resetDemo(now = new Date()) {
       });
 
       // ── 입출금 알림함 (확인 대기) ──
+      // 문자에 찍힌 잔액이 장부와 이어지도록, 지금 장부 잔액에서 이어 붙인다.
+      const ledger =
+        offerings.reduce((n, o) => n + o.amount, 0) - expenses.reduce((n, e) => n + e.amount, 0);
       const at = (h: number) => new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, 12);
       await tx.bankAlert.createMany({
         data: [
@@ -298,11 +301,11 @@ export async function resetDemo(now = new Date()) {
             churchId,
             direction: "IN",
             amount: 50_000,
-            balance: 3_250_000,
+            balance: ledger + 50_000,
             counterparty: members[5].name,
             bankName: "IBK기업",
             occurredAt: at(9),
-            rawText: `[Web발신]\n입금 50,000원\n잔액 3,250,000원\n${members[5].name}\n000***00000000\n기업`,
+            rawText: `[Web발신]\n입금 50,000원\n잔액 ${(ledger + 50_000).toLocaleString("ko-KR")}원\n${members[5].name}\n000***00000000\n기업`,
             source: "SHORTCUT",
             dedupKey: "demo-1",
           },
@@ -310,11 +313,11 @@ export async function resetDemo(now = new Date()) {
             churchId,
             direction: "OUT",
             amount: 132_000,
-            balance: 3_118_000,
+            balance: ledger + 50_000 - 132_000,
             counterparty: "한국전력공사",
             bankName: "IBK기업",
             occurredAt: at(10),
-            rawText: "[Web발신]\n출금 132,000원\n잔액 3,118,000원\n한국전력공사\n000***00000000\n기업",
+            rawText: `[Web발신]\n출금 132,000원\n잔액 ${(ledger + 50_000 - 132_000).toLocaleString("ko-KR")}원\n한국전력공사\n000***00000000\n기업`,
             source: "SHORTCUT",
             dedupKey: "demo-2",
           },

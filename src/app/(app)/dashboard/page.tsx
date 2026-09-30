@@ -246,7 +246,7 @@ export default async function DashboardPage({
                 { label: `${month}월 수입`, value: money.monthIncome, tone: "text-income", href: `/finance/ledger?year=${year}&month=${month}&type=in` },
                 { label: `${month}월 지출`, value: money.monthExpense, tone: "text-expense", href: `/finance/ledger?year=${year}&month=${month}&type=out` },
                 {
-                  label: `${year}년 남은 돈`,
+                  label: `${year}년 수입−지출`,
                   value: money.summary.totalIncome - money.summary.totalExpense,
                   tone: "text-ink",
                   href: `/finance/ledger?year=${year}`,

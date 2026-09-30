@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { requireFinance, canManageFinance } from "@/lib/auth";
-import { getYearSummary, monthRange } from "@/lib/finance";
+import { getCurrentBalance, getYearSummary, monthRange } from "@/lib/finance";
+import { accountTag } from "@/lib/bank-balance";
 import { won, ymd } from "@/lib/format";
 import { Card, CardTitle, PageHeader, StatCard } from "@/components/ui";
 import { YearSelect } from "@/components/year-select";
@@ -54,6 +55,36 @@ export default async function FinancePage({
       take: 6,
     }),
   ]);
+
+  // 장부 전체 잔액과, 은행 문자에 찍힌 통장 잔액(통장마다 가장 최근 문자)
+  const [current, before, bankAlerts] = await Promise.all([
+    getCurrentBalance(staff.churchId),
+    Promise.all([
+      prisma.offering.aggregate({ where: { churchId: staff.churchId, date: { lt: new Date(year, 0, 1) } }, _sum: { amount: true } }),
+      prisma.expense.aggregate({ where: { churchId: staff.churchId, date: { lt: new Date(year, 0, 1) } }, _sum: { amount: true } }),
+    ]),
+    prisma.bankAlert.findMany({
+      where: { churchId: staff.churchId, balance: { not: null }, source: { not: "BALANCE" } },
+      orderBy: { occurredAt: "desc" },
+      take: 50,
+      select: { balance: true, bankName: true, rawText: true, occurredAt: true },
+    }),
+  ]);
+  const carried = (before[0]._sum.amount ?? 0) - (before[1]._sum.amount ?? 0);
+  const seen = new Set<string>();
+  const bankAccounts: { label: string; when: string; balance: number }[] = [];
+  for (const a of bankAlerts) {
+    const key = `${a.bankName ?? ""}|${accountTag(a.rawText) ?? ""}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    const d = a.occurredAt;
+    bankAccounts.push({
+      label: a.bankName ?? "통장",
+      when: `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`,
+      balance: a.balance!,
+    });
+  }
+  const bankTotal = bankAccounts.length ? bankAccounts.reduce((s, b) => s + b.balance, 0) : null;
 
   const bankPending = canManageFinance(staff.role)
     ? await prisma.bankAlert.count({ where: { churchId: staff.churchId, status: "PENDING" } })
@@ -141,12 +172,50 @@ export default async function FinancePage({
         />
         <StatCard label={`${year}년 총수입`} value={won(summary.totalIncome)} icon={<IconTrend />} />
         <StatCard
-          label={`${year}년 잔액`}
+          label={`${year}년 수입−지출`}
           value={won(balance)}
-          sub={`지출 ${won(summary.totalExpense)}`}
+          sub={`총지출 ${won(summary.totalExpense)}`}
           tone={balance >= 0 ? "primary" : "expense"}
         />
       </div>
+
+      {/* 지금 통장에 있어야 할 돈 — 해마다 넘어온 돈까지 모두 더한 잔액. 은행 문자의 잔액과 맞춰 본다. */}
+      <Card className="mb-5">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <p className="eyebrow">현재 잔액 (장부 전체)</p>
+            <p className="tnum mt-1.5 text-[1.9rem] font-bold leading-none tracking-[-0.03em] text-ink">
+              {won(current.balance)}
+            </p>
+            <p className="mt-1.5 text-xs text-ink-3">
+              처음 기록부터 지금까지 모든 수입에서 지출을 뺀 돈
+              {carried !== 0 && ` · ${year}년 이전에서 넘어온 돈 ${won(carried)} 포함`}
+            </p>
+          </div>
+          <Link href="/finance/ledger" className="text-sm font-semibold text-primary">
+            내역 보기 →
+          </Link>
+        </div>
+        {bankTotal !== null && (
+          <div
+            className={`mt-4 rounded-xl px-4 py-3 text-sm ${bankTotal === current.balance ? "bg-income-soft text-income" : "bg-warn-soft text-warn"}`}
+          >
+            <p className="font-semibold">
+              통장 잔액 {won(bankTotal)}{" "}
+              {bankTotal === current.balance
+                ? "— 장부와 똑같습니다 ✓"
+                : `— 장부와 ${won(Math.abs(bankTotal - current.balance))} 차이`}
+            </p>
+            <p className="mt-0.5 text-xs opacity-80">
+              {bankAccounts.map((b) => `${b.label} ${b.when} 문자 기준`).join(" · ")}
+              {bankTotal !== current.balance &&
+                (bankPending > 0
+                  ? ` · 입출금 알림함에 기록하지 않은 알림 ${bankPending}건이 있습니다.`
+                  : " · 그 뒤에 입력한 기록이 있거나, 문자 없이 오간 돈이 있을 수 있습니다.")}
+            </p>
+          </div>
+        )}
+      </Card>
 
       <div className="mb-5">
         <Card>
