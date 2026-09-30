@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requireFinance, canManageFinance } from "@/lib/auth";
 import { PAYMENT_METHODS, type PaymentMethod } from "@/lib/constants";
 import { won, ymdDash } from "@/lib/format";
+import { withBack } from "@/lib/back";
 import { findLinkable, giverInclude, giverLabel, givenBy, giversOf } from "@/lib/offering-givers";
 import { Alert, Card, EmptyState, PageHeader, StatCard, TableWrap } from "@/components/ui";
 import { GiverButton, GiverPickerProvider, GiverPress } from "@/components/giver-picker";
@@ -119,6 +120,8 @@ export default async function OfferingsPage({
     const s = params.toString();
     return `/finance/offerings${s ? `?${s}` : ""}`;
   }
+
+  const here = hrefWith({ page: page > 1 ? page : undefined });
 
   // 목록을 날짜별로 묶는다
   const days: { key: string; date: Date; items: typeof offerings }[] = [];
@@ -387,7 +390,7 @@ export default async function OfferingsPage({
                             {canEdit && (
                               <td className="text-right">
                                 <Link
-                                  href={`/finance/offerings/${o.id}`}
+                                  href={withBack(`/finance/offerings/${o.id}`, here)}
                                   className="text-sm font-semibold text-primary hover:underline"
                                 >
                                   수정
@@ -437,7 +440,7 @@ export default async function OfferingsPage({
                         {canEdit ? (
                           <GiverPress
                             {...target(o)}
-                            href={`/finance/offerings/${o.id}`}
+                            href={withBack(`/finance/offerings/${o.id}`, here)}
                             className="flex items-center gap-3 p-3.5 active:bg-surface-2"
                           >
                             {body}

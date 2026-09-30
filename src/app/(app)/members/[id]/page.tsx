@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { safeBack } from "@/lib/back";
 import { prisma } from "@/lib/prisma";
 import { requireStaff, canManageFinance, canPastoral } from "@/lib/auth";
 import { GENDERS, MEMBER_STATUS, VISIT_KINDS, type MemberStatus } from "@/lib/constants";
@@ -60,7 +61,7 @@ export default async function MemberDetailPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ error?: string; ok?: string; write?: string }>;
+  searchParams: Promise<{ error?: string; ok?: string; write?: string; back?: string }>;
 }) {
   const staff = await requireStaff();
   const { id } = await params;
@@ -140,7 +141,7 @@ export default async function MemberDetailPage({
       <PageHeader
         title={member.name}
         description={`교적번호 ${member.code}`}
-        back={{ href: "/members", label: "교적 관리" }}
+        back={{ href: safeBack(sp.back) ?? "/members", label: "교적 관리" }}
         actions={
           <>
             <Link href={`/members/${member.id}/edit`} className="btn btn-ghost">

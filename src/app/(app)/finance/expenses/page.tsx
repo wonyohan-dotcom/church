@@ -6,6 +6,7 @@ import { won, ymd } from "@/lib/format";
 import { Alert, Card, EmptyState, PageHeader, StatCard, TableWrap } from "@/components/ui";
 import { IconPlus, IconReceipt, IconWallet } from "@/components/icons";
 import type { Prisma } from "@/generated/prisma/client";
+import { withBack } from "@/lib/back";
 
 export const metadata = { title: "지출 내역" };
 
@@ -77,6 +78,7 @@ export default async function ExpensesPage({
     const s = params.toString();
     return `/finance/expenses${s ? `?${s}` : ""}`;
   }
+  const here = hrefWith({ page: page > 1 ? page : undefined });
 
   return (
     <>
@@ -213,7 +215,7 @@ export default async function ExpensesPage({
                       {canEdit && (
                         <td className="text-right">
                           <Link
-                            href={`/finance/expenses/${e.id}`}
+                            href={withBack(`/finance/expenses/${e.id}`, here)}
                             className="text-sm font-semibold text-primary hover:underline"
                           >
                             수정
@@ -231,7 +233,7 @@ export default async function ExpensesPage({
             {expenses.map((e) => (
               <li key={e.id}>
                 <Link
-                  href={canEdit ? `/finance/expenses/${e.id}` : "#"}
+                  href={canEdit ? withBack(`/finance/expenses/${e.id}`, here) : "#"}
                   className="flex items-center gap-3 p-3.5"
                 >
                   <span className="min-w-0 flex-1">

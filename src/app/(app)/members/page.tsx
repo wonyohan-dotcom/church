@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { withBack } from "@/lib/back";
 import { prisma } from "@/lib/prisma";
 import { requireStaff } from "@/lib/auth";
 import { MEMBER_STATUS, POSITIONS, type MemberStatus } from "@/lib/constants";
@@ -44,6 +45,12 @@ export default async function MembersPage({
   const districtId = sp.district ?? "";
   const position = sp.position ?? "";
   const page = Math.max(1, Number(sp.page ?? 1) || 1);
+  // 교인 자세히 화면의 '← 뒤로'가 이 목록(검색어·필터·쪽 그대로)으로 돌아오게 한다.
+  const here = `/members?${new URLSearchParams(
+    Object.entries({ q, status: sp.status ?? "", district: districtId, position, page: page > 1 ? String(page) : "" }).filter(
+      ([, v]) => v,
+    ),
+  ).toString()}`;
 
   const where: Prisma.MemberWhereInput = {
     churchId: staff.churchId,
@@ -246,7 +253,7 @@ export default async function MembersPage({
                     <tr key={m.id}>
                       <td>
                         <Link
-                          href={`/members/${m.id}`}
+                          href={withBack(`/members/${m.id}`, here)}
                           className="flex items-center gap-3 transition-opacity hover:opacity-70"
                         >
                           <Avatar src={m.photoUrl} name={m.name} />
@@ -284,7 +291,7 @@ export default async function MembersPage({
           <ul className="card divide-y divide-line sm:hidden">
             {members.map((m) => (
               <li key={m.id}>
-                <Link href={`/members/${m.id}`} className="flex items-center gap-3 p-3.5">
+                <Link href={withBack(`/members/${m.id}`, here)} className="flex items-center gap-3 p-3.5">
                   <Avatar src={m.photoUrl} name={m.name} size="md" />
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">

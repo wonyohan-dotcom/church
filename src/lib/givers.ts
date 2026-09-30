@@ -88,10 +88,63 @@ export function matchGivers(text: string | null | undefined, members: NamedMembe
     }
   }
 
-  // 3) 동명이인(id 없음)은 빼고, 나온 순서대로
+  // 3) 성을 빼고 이름만 적은 부부·가족 헌금 (예: "범준지성", "지성범준감사헌금")
+  //    교인 이름이 하나도 잡히지 않은 글자 덩어리를, 헌금 낱말을 떼어낸 뒤
+  //    '이름(성 뺀 두 글자)' 두 개 이상으로 남김없이 나눌 수 있을 때만 인정한다.
+  //    "은혜" 한 단어처럼 이름 하나뿐이면 흔한 낱말일 수 있어 잇지 않는다.
+  for (const m of text.matchAll(/[가-힣]+/g)) {
+    const start = m.index!;
+    const end = start + m[0].length;
+    if (spans.some((s) => s.start < end && s.end > start)) continue;
+    for (const id of splitGivenNames(m[0], members, byName)) spans.push({ id, start, end: start });
+  }
+
+  // 4) 동명이인(id 없음)은 빼고, 나온 순서대로
   const ids: string[] = [];
   for (const s of spans.sort((a, b) => a.start - b.start)) {
     if (s.id && !ids.includes(s.id)) ids.push(s.id);
   }
   return ids;
+}
+
+/** 글자 덩어리를 '성 뺀 이름'(과 온이름)으로 남김없이 나눈다. 두 사람 이상일 때만 돌려준다. */
+function splitGivenNames(chunk: string, members: NamedMember[], full: Map<string, string | null>): string[] {
+  // 끝에 붙은 헌금 낱말을 떼어낸다 (감사헌금 → 감사 → 없음)
+  let core = chunk;
+  const words = [...SUFFIXES].sort((a, b) => b.length - a.length);
+  for (let cut = true; cut; ) {
+    cut = false;
+    for (const w of words) {
+      if (core.length > w.length && core.endsWith(w)) {
+        core = core.slice(0, -w.length);
+        cut = true;
+        break;
+      }
+    }
+  }
+  if (core.length < 4) return [];
+
+  const given = new Map<string, string | null>();
+  for (const m of members) {
+    const name = m.name.replace(/\s/g, "");
+    if (name.length !== 3) continue; // 성 한 글자 + 이름 두 글자만 (복성·외자는 헷갈리기 쉽다)
+    const g = name.slice(1);
+    given.set(g, given.has(g) ? null : m.id);
+  }
+  const lookup = (t: string) => full.get(t) ?? given.get(t) ?? null;
+
+  // 앞에서부터 가장 적은 토막으로 나누기
+  const best: (string[] | null)[] = new Array(core.length + 1).fill(null);
+  best[0] = [];
+  for (let i = 0; i < core.length; i++) {
+    if (!best[i]) continue;
+    for (const len of [2, 3]) {
+      const id = lookup(core.slice(i, i + len));
+      if (!id || i + len > core.length) continue;
+      const next = [...best[i]!, id];
+      if (!best[i + len] || best[i + len]!.length > next.length) best[i + len] = next;
+    }
+  }
+  const ids = best[core.length];
+  return ids && new Set(ids).size >= 2 ? [...new Set(ids)] : [];
 }

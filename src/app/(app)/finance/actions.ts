@@ -10,6 +10,7 @@ import { parseDate, parseIntOr, str, won } from "@/lib/format";
 import { ownAccountId, ownMemberId } from "@/lib/tenant";
 import { linkAlert, unlinkAlert } from "@/lib/bank";
 import { autoLinkGivers, findLinkable, setGivers } from "@/lib/offering-givers";
+import { backWith, safeBack } from "@/lib/back";
 
 /** 입출금 알림함에서 넘어온 입력이면 에러 화면에서도 알림을 이어서 보여준다. */
 function bankQuery(formData: FormData) {
@@ -76,7 +77,7 @@ export async function createOffering(formData: FormData) {
   redirect("/finance/offerings?ok=created");
 }
 
-export async function updateOffering(id: string, formData: FormData) {
+export async function updateOffering(id: string, back: string | null, formData: FormData) {
   const user = await requireFinance();
 
   const existing = await prisma.offering.findUnique({
@@ -123,10 +124,11 @@ export async function updateOffering(id: string, formData: FormData) {
 
   revalidatePath("/finance");
   revalidatePath("/finance/offerings");
-  redirect("/finance/offerings?ok=updated");
+  const to = safeBack(back);
+  redirect(to ? backWith(to, "ok=updated") : "/finance/offerings?ok=updated");
 }
 
-export async function deleteOffering(id: string) {
+export async function deleteOffering(id: string, back?: string | null) {
   const user = await requireFinance();
 
   const offering = await prisma.offering.findUnique({
@@ -149,7 +151,8 @@ export async function deleteOffering(id: string) {
 
   revalidatePath("/finance");
   revalidatePath("/finance/offerings");
-  redirect("/finance/offerings?ok=deleted");
+  const to = safeBack(back);
+  redirect(to ? backWith(to, "ok=deleted") : "/finance/offerings?ok=deleted");
 }
 
 /**
@@ -191,6 +194,55 @@ export async function setOfferingGivers(
     revalidatePath(`/members/${id}`);
   }
   return { ok: true };
+}
+
+/**
+ * 여러 헌금의 헌금자를 한꺼번에 정한다 (수입·지출 내역에서 검색 → 여러 건 선택).
+ * ids[0] 이 대표, 나머지는 함께 드린 교인. 빈 배열이면 모두 무명.
+ */
+export async function setGiversBulk(
+  offeringIds: string[],
+  memberIds: string[],
+): Promise<{ ok: boolean; count?: number }> {
+  const user = await requireFinance();
+  if (!Array.isArray(offeringIds) || !Array.isArray(memberIds) || offeringIds.length === 0) return { ok: false };
+  const offerings = await prisma.offering.findMany({
+    where: { id: { in: offeringIds.map(String).slice(0, 500) }, churchId: user.churchId },
+    select: { id: true, memberId: true },
+  });
+  const unique = [...new Set(memberIds.map(String))].slice(0, 20);
+  const members = unique.length
+    ? await prisma.member.findMany({ where: { churchId: user.churchId, id: { in: unique } }, select: { id: true, name: true } })
+    : [];
+  const ids = unique.filter((id) => members.some((m) => m.id === id));
+  const targets = offerings.map((o) => o.id);
+
+  await prisma.$transaction([
+    prisma.offering.updateMany({
+      where: { id: { in: targets } },
+      data: { memberId: ids[0] ?? null, giversConfirmed: true },
+    }),
+    prisma.offeringGiver.deleteMany({ where: { offeringId: { in: targets } } }),
+    prisma.offeringGiver.createMany({
+      data: targets.flatMap((offeringId) => ids.slice(1).map((memberId) => ({ offeringId, memberId }))),
+    }),
+  ]);
+
+  const names = ids.map((id) => members.find((m) => m.id === id)?.name).join(", ") || "무명";
+  await logAudit({
+    churchId: user.churchId,
+    action: "UPDATE",
+    entity: "Offering",
+    summary: `헌금자 한꺼번에 지정: ${targets.length}건 → ${names}`,
+    userId: user.id,
+  });
+  revalidatePath("/finance/ledger");
+  revalidatePath("/finance/offerings");
+  revalidatePath("/finance");
+  for (const id of new Set([...ids, ...offerings.map((o) => o.memberId).filter((v): v is string => !!v)])) {
+    revalidatePath(`/members/${id}`);
+  }
+  return { ok: true, count: targets.length };
 }
 
 /** 적힌 이름으로 교인을 찾아, 고른 묶음을 한꺼번에 잇는다. */
@@ -286,7 +338,7 @@ export async function createExpense(formData: FormData) {
   redirect("/finance/expenses?ok=created");
 }
 
-export async function updateExpense(id: string, formData: FormData) {
+export async function updateExpense(id: string, back: string | null, formData: FormData) {
   const user = await requireFinance();
 
   const existing = await prisma.expense.findUnique({ where: { id } });
@@ -342,10 +394,11 @@ export async function updateExpense(id: string, formData: FormData) {
 
   revalidatePath("/finance");
   revalidatePath("/finance/expenses");
-  redirect("/finance/expenses?ok=updated");
+  const to = safeBack(back);
+  redirect(to ? backWith(to, "ok=updated") : "/finance/expenses?ok=updated");
 }
 
-export async function deleteExpense(id: string) {
+export async function deleteExpense(id: string, back?: string | null) {
   const user = await requireFinance();
 
   const expense = await prisma.expense.findUnique({
@@ -369,7 +422,8 @@ export async function deleteExpense(id: string) {
 
   revalidatePath("/finance");
   revalidatePath("/finance/expenses");
-  redirect("/finance/expenses?ok=deleted");
+  const to = safeBack(back);
+  redirect(to ? backWith(to, "ok=deleted") : "/finance/expenses?ok=deleted");
 }
 
 /* ── 계정과목 ────────────────────────────── */

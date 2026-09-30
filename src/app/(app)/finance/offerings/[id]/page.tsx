@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { safeBack } from "@/lib/back";
 import { prisma } from "@/lib/prisma";
 import { requireFinance } from "@/lib/auth";
 import { Alert, PageHeader } from "@/components/ui";
@@ -14,11 +15,12 @@ export default async function EditOfferingPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; back?: string }>;
 }) {
   const staff = await requireFinance();
   const { id } = await params;
   const sp = await searchParams;
+  const back = safeBack(sp.back);
 
   const [offering, accounts, members] = await Promise.all([
     prisma.offering.findUnique({
@@ -65,7 +67,7 @@ export default async function EditOfferingPage({
     <>
       <PageHeader
         title="헌금 수정"
-        back={{ href: "/finance/offerings", label: "헌금 내역" }}
+        back={back ? { href: back, label: "이전 화면" } : { href: "/finance/offerings", label: "헌금 내역" }}
       />
 
       {sp.error && (
@@ -117,8 +119,8 @@ export default async function EditOfferingPage({
       {/* 헌금자를 위에서 바꾸면 폼도 새 값으로 다시 그린다 */}
       <OfferingForm
         key={offering.memberId ?? "none"}
-        action={updateOffering.bind(null, offering.id)}
-        deleteAction={deleteOffering.bind(null, offering.id)}
+        action={updateOffering.bind(null, offering.id, back)}
+        deleteAction={deleteOffering.bind(null, offering.id, back)}
         accounts={accounts}
         members={pickable}
         offering={offering}

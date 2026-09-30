@@ -36,7 +36,6 @@ test("다른 사람 이름 속 글자에는 걸리지 않는다", () => {
   assert.deepEqual(names("김현주"), []); // 교인 '김현' 이 아니다
   assert.deepEqual(names("강인숙"), []);
   assert.deepEqual(names("박이숙종"), []);
-  assert.deepEqual(names("지성범준감사헌금"), []); // 이름 일부만 쓴 경우는 사람이 고른다
 });
 
 test("동명이인은 잇지 않는다", () => {
@@ -55,4 +54,17 @@ test("내부이체·환불·이자는 헌금자와 잇지 않는다", () => {
   assert.equal(canLinkGivers("감사헌금"), true);
   assert.equal(canLinkGivers("후원금"), true);
   assert.equal(canLinkGivers("바이블PT 참가비"), true);
+});
+
+test("성을 빼고 이름만 쓴 부부 헌금", () => {
+  assert.deepEqual(names("범준지성"), ["장범준", "홍지성"]);
+  assert.deepEqual(names("지성범준감사헌금"), ["홍지성", "장범준"]);
+  assert.deepEqual(names("지성범준 십일조"), ["홍지성", "장범준"]);
+  assert.deepEqual(names("은샘승겸"), ["고은샘", "김승겸"]);
+});
+
+test("이름 한 단어만 있으면 흔한 낱말일 수 있어 잇지 않는다", () => {
+  assert.deepEqual(names("범준"), []);
+  assert.deepEqual(names("범준감사"), []);
+  assert.deepEqual(names("지성인"), []);
 });

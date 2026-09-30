@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { safeBack } from "@/lib/back";
 import { prisma } from "@/lib/prisma";
 import { requireFinance } from "@/lib/auth";
 import { Alert, PageHeader } from "@/components/ui";
@@ -17,11 +18,12 @@ export default async function EditExpensePage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; back?: string }>;
 }) {
   const staff = await requireFinance();
   const { id } = await params;
-  const { error } = await searchParams;
+  const { error, back: backParam } = await searchParams;
+  const back = safeBack(backParam);
 
   const [expense, accounts] = await Promise.all([
     prisma.expense.findUnique({ where: { id } }),
@@ -35,7 +37,7 @@ export default async function EditExpensePage({
 
   return (
     <>
-      <PageHeader title="지출 수정" back={{ href: "/finance/expenses", label: "지출 내역" }} />
+      <PageHeader title="지출 수정" back={back ? { href: back, label: "이전 화면" } : { href: "/finance/expenses", label: "지출 내역" }} />
 
       {error && (
         <div className="mb-5">
@@ -44,8 +46,8 @@ export default async function EditExpensePage({
       )}
 
       <ExpenseForm
-        action={updateExpense.bind(null, expense.id)}
-        deleteAction={deleteExpense.bind(null, expense.id)}
+        action={updateExpense.bind(null, expense.id, back)}
+        deleteAction={deleteExpense.bind(null, expense.id, back)}
         accounts={accounts}
         expense={expense}
         submitLabel="저장하기"

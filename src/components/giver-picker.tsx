@@ -13,7 +13,7 @@ import {
   type ReactNode,
 } from "react";
 import { matchGivers } from "@/lib/givers";
-import { setOfferingGivers } from "@/app/(app)/finance/actions";
+import { setGiversBulk, setOfferingGivers } from "@/app/(app)/finance/actions";
 import { IconCheck, IconSearch, IconX } from "./icons";
 
 /**
@@ -28,11 +28,15 @@ export type PickerMember = { id: string; name: string; sub?: string | null };
 
 type Target = {
   offeringId: string;
+  /** 여러 헌금을 한꺼번에 정할 때 (검색 결과에서 여러 건 선택) */
+  offeringIds?: string[];
   giverIds: string[];
   /** 창 위에 보여줄 설명 (예: "9월 21일 · 감사헌금 · 50,000원") */
   title: string;
   /** 통장·엑셀에 적힌 이름 */
   writtenName: string | null;
+  /** 저장한 뒤 할 일 (여러 건 선택을 풀기 등) */
+  onSaved?: () => void;
 };
 
 const Ctx = createContext<((t: Target) => void) | null>(null);
@@ -58,6 +62,10 @@ export function GiverPickerProvider({
       )}
     </Ctx.Provider>
   );
+}
+
+export function useGiverPicker() {
+  return useOpen();
 }
 
 function useOpen() {
@@ -192,12 +200,16 @@ function PickerSheet({
   const save = (ids: string[]) =>
     startTransition(async () => {
       setError(null);
-      const r = await setOfferingGivers(target.offeringId, ids).catch(() => ({ ok: false }));
+      const r = await (target.offeringIds
+        ? setGiversBulk(target.offeringIds, ids)
+        : setOfferingGivers(target.offeringId, ids)
+      ).catch(() => ({ ok: false }));
       if (!r.ok) {
         setError("저장하지 못했습니다. 잠시 뒤 다시 해 주세요.");
         return;
       }
       router.refresh();
+      target.onSaved?.();
       onClose();
     });
 
@@ -209,7 +221,9 @@ function PickerSheet({
           <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-surface-3 sm:hidden" />
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <p className="text-base font-bold text-ink">누가 드린 헌금인가요?</p>
+              <p className="text-base font-bold text-ink">
+                {target.offeringIds ? `헌금 ${target.offeringIds.length}건, 누가 드렸나요?` : "누가 드린 헌금인가요?"}
+              </p>
               <p className="tnum mt-0.5 truncate text-xs text-ink-3">{target.title}</p>
               {target.writtenName && (
                 <p className="mt-0.5 truncate text-xs text-ink-3">적힌 이름: “{target.writtenName}”</p>

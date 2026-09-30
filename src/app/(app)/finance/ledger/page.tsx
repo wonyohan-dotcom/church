@@ -1,8 +1,11 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import { requireFinance } from "@/lib/auth";
+import { canManageFinance, requireFinance } from "@/lib/auth";
 import { won, ymdDash } from "@/lib/format";
-import { giverInclude, giverLabel } from "@/lib/offering-givers";
+import { giverInclude, giverLabel, giversOf } from "@/lib/offering-givers";
+import { withBack } from "@/lib/back";
+import { GiverPickerProvider } from "@/components/giver-picker";
+import { LedgerList } from "./ledger-list";
 import { Card, EmptyState, PageHeader } from "@/components/ui";
 import { IconSearch, IconWallet } from "@/components/icons";
 import type { Prisma } from "@/generated/prisma/client";
@@ -22,6 +25,8 @@ type Row = {
   who: string;
   memo: string | null;
   href: string;
+  donorName: string | null;
+  giverIds: string[];
 };
 
 /**
@@ -34,6 +39,7 @@ export default async function LedgerPage({
   searchParams: Promise<{ year?: string; month?: string; type?: string; q?: string; page?: string }>;
 }) {
   const staff = await requireFinance();
+  const canEdit = canManageFinance(staff.role);
   const sp = await searchParams;
   const now = new Date();
   const year = Number(sp.year) || now.getFullYear();
@@ -107,6 +113,8 @@ export default async function LedgerPage({
       who: giverLabel(o),
       memo: o.note,
       href: `/finance/offerings/${o.id}`,
+      donorName: o.donorName,
+      giverIds: giversOf(o).map((g) => g.id),
     })),
     ...expenses.map((e) => ({
       id: e.id,
@@ -118,6 +126,8 @@ export default async function LedgerPage({
       who: e.payee ?? "",
       memo: e.description ?? e.note,
       href: `/finance/expenses/${e.id}`,
+      donorName: null,
+      giverIds: [],
     })),
   ].sort((a, b) => b.date.getTime() - a.date.getTime() || b.createdAt.getTime() - a.createdAt.getTime());
 
@@ -153,9 +163,24 @@ export default async function LedgerPage({
     return `/finance/ledger${s ? `?${s}` : ""}`;
   };
   const period = month > 0 ? `${year}년 ${month}월` : `${year}년`;
+  // 자세히 화면에서 '뒤로'·저장 뒤 이 목록(검색어·달·쪽 그대로)으로 돌아오게 한다.
+  const here = href({ page: page > 1 ? page : undefined });
+  const pickerMembers = canEdit
+    ? (
+        await prisma.member.findMany({
+          where: { churchId: staff.churchId },
+          select: { id: true, name: true, position: true, status: true, district: { select: { name: true } } },
+          orderBy: [{ status: "asc" }, { name: "asc" }],
+        })
+      ).map((m) => ({
+        id: m.id,
+        name: m.name,
+        sub: [m.position, m.district?.name, m.status !== "ACTIVE" ? "(비활동)" : null].filter(Boolean).join(" · "),
+      }))
+    : [];
 
   return (
-    <>
+    <GiverPickerProvider members={pickerMembers}>
       <PageHeader
         title="수입·지출 내역"
         description="헌금과 지출을 한곳에서 찾아봅니다. 이름, 거래처, 적요, 금액으로 검색할 수 있습니다."
@@ -302,51 +327,32 @@ export default async function LedgerPage({
           />
         </Card>
       ) : (
-        <div className="space-y-3">
-          <p className="px-1 text-xs text-ink-3">
+        <>
+          <p className="mb-2 px-1 text-xs text-ink-3">
             {q ? `‘${q}’ 검색 결과 ` : ""}
             {rows.length.toLocaleString("ko-KR")}건 · 누르면 자세히 보고 고칠 수 있습니다.
           </p>
-          {days.map((d) => (
-            <section key={d.key}>
-              <div className="flex items-baseline justify-between gap-3 px-1 pb-1.5 text-sm">
-                <span className="font-semibold text-ink-2">
-                  {d.date.getMonth() + 1}월 {d.date.getDate()}일 ({WEEKDAY[d.date.getDay()]})
-                </span>
-                <span className="tnum text-xs">
-                  {d.in > 0 && <span className="text-income">+{won(d.in)}</span>}
-                  {d.in > 0 && d.out > 0 && <span className="text-ink-3"> · </span>}
-                  {d.out > 0 && <span className="text-expense">−{won(d.out)}</span>}
-                </span>
-              </div>
-              <ul className="card divide-y divide-line">
-                {d.rows.map((r) => (
-                  <li key={`${r.kind}-${r.id}`}>
-                    <Link href={r.href} className="flex items-center gap-3 p-3.5 hover:bg-surface-2">
-                      <span
-                        className={`grid size-9 shrink-0 place-items-center rounded-xl text-xs font-bold ${
-                          r.kind === "IN" ? "bg-income-soft text-income" : "bg-expense-soft text-expense"
-                        }`}
-                      >
-                        {r.kind === "IN" ? "수입" : "지출"}
-                      </span>
-                      <span className="min-w-0 flex-1">
-                        <span className="block truncate text-sm font-semibold text-ink">{r.account}</span>
-                        <span className="block truncate text-xs text-ink-3">
-                          {[r.who, r.memo].filter(Boolean).join(" · ") || "-"}
-                        </span>
-                      </span>
-                      <span className={`tnum shrink-0 text-sm font-semibold ${r.kind === "IN" ? "text-income" : "text-expense"}`}>
-                        {r.kind === "IN" ? "+" : "−"}
-                        {won(r.amount)}
-                      </span>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          ))}
-        </div>
+          <LedgerList
+            canEdit={canEdit}
+            days={days.map((d) => ({
+              key: d.key,
+              label: `${d.date.getMonth() + 1}월 ${d.date.getDate()}일 (${WEEKDAY[d.date.getDay()]})`,
+              in: d.in,
+              out: d.out,
+              rows: d.rows.map((r) => ({
+                id: r.id,
+                kind: r.kind,
+                amount: r.amount,
+                account: r.account,
+                who: r.who,
+                memo: r.memo,
+                href: withBack(r.href, here),
+                donorName: r.donorName,
+                giverIds: r.giverIds,
+              })),
+            }))}
+          />
+        </>
       )}
 
       {totalPages > 1 && (
@@ -366,7 +372,7 @@ export default async function LedgerPage({
           )}
         </nav>
       )}
-    </>
+    </GiverPickerProvider>
   );
 }
 
