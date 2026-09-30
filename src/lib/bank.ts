@@ -21,6 +21,9 @@ import type { Prisma } from "@/generated/prisma/client";
 
 export const BANK_AUTO_NOTE = "은행 알림으로 자동 기록";
 
+/** 정정·취소 문자 (나갔던 돈이 돌아옴) */
+const CORRECTION = /(출금|지급|인출|결제|이체|송금)\s*(정정|취소)/;
+
 export type Suggestion = {
   accountId: string | null;
   memberId: string | null;
@@ -257,6 +260,23 @@ async function reconcileBalances(tx: Tx, churchId: string, saved: BankAlertModel
 export async function suggestFor(alert: BankAlertModel): Promise<Suggestion> {
   const { churchId, counterparty } = alert;
   const none: Suggestion = { accountId: null, memberId: null, reason: null, confident: false };
+
+  // 0) 카드 결제 취소·출금 정정으로 돌아온 돈은 헌금이 아니다. '환불·취소' 같은 수입 항목으로.
+  if (alert.direction === "IN" && CORRECTION.test(alert.rawText)) {
+    const refund = await prisma.account.findFirst({
+      where: {
+        churchId,
+        type: "INCOME",
+        active: true,
+        OR: [{ name: { contains: "환불" } }, { name: { contains: "취소" } }, { name: { contains: "반환" } }],
+      },
+      orderBy: { sortOrder: "asc" },
+      select: { id: true },
+    });
+    return refund
+      ? { accountId: refund.id, memberId: null, reason: "카드 결제 취소·출금 정정", confident: true }
+      : { ...none, reason: "카드 결제 취소·출금 정정 — '환불·취소' 수입 항목을 만들어 두면 자동으로 기록합니다" };
+  }
 
   // 1) 알림함에서 같은 상대를 기록한 적이 있으면 그대로
   if (counterparty) {

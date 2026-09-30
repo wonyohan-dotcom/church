@@ -16,6 +16,8 @@
 
 export type ParsedBankMessage = {
   direction: "IN" | "OUT";
+  /** 정정·취소 문자 (예: '출금정정' = 카드 결제 취소로 돈이 돌아옴) */
+  correction?: boolean;
   amount: number;
   balance: number | null;
   counterparty: string | null;
@@ -71,11 +73,26 @@ export function parseBankMessage(text: string, now: Date = new Date()): ParsedBa
   // [Web발신], [KB] 처럼 괄호로 둘러싼 머리말은 이름 후보를 헷갈리게 하므로 지운다.
   const cleaned = raw.replace(/\[[^\]\n]{0,20}\]/g, " ");
 
-  const deal = findDeal(cleaned);
-  if (!deal) return null;
-
   const balanceMatch = /잔액\s*[:：]?\s*(-?[\d,]+)/.exec(cleaned);
   const balance = balanceMatch ? toInt(balanceMatch[1]) : null;
+
+  // 정정·취소: '출금정정/출금취소/결제취소' 는 나갔던 돈이 돌아온 것(입금),
+  // '입금정정/입금취소' 는 들어왔던 돈이 다시 나간 것(출금)이다.
+  const fix = findCorrection(cleaned);
+  if (fix) {
+    return {
+      direction: fix.direction,
+      correction: true,
+      amount: fix.amount,
+      balance: balance !== null && Math.abs(balance) <= MAX_AMOUNT ? balance : null,
+      counterparty: correctionLabel(cleaned, fix.direction),
+      bankName,
+      occurredAt: findDate(cleaned, now),
+    };
+  }
+
+  const deal = findDeal(cleaned);
+  if (!deal) return null;
 
   return {
     direction: deal.direction,
@@ -95,6 +112,25 @@ export function splitMessages(text: string): string[] {
     .map((p) => p.trim())
     .filter(Boolean);
   return parts.length > 0 ? parts : [text.trim()].filter(Boolean);
+}
+
+function findCorrection(text: string): { direction: "IN" | "OUT"; amount: number } | null {
+  const m = /(출금|지급|인출|결제|이체|송금|입금)\s*(?:정정|취소)\s*[:：]?\s*([\d,]{1,15})\s*원?/.exec(text);
+  if (!m) return null;
+  const amount = toInt(m[2]);
+  if (!amount || amount <= 0 || amount > MAX_AMOUNT) return null;
+  return { direction: m[1] === "입금" ? "OUT" : "IN", amount };
+}
+
+/** 정정 문자에는 거래 상대가 없어서, 무슨 취소인지 알아볼 수 있게 이름을 붙인다. */
+function correctionLabel(text: string, direction: "IN" | "OUT"): string {
+  // "260923체크취소" → 체크카드 결제 취소 (9/23)
+  const card = /(?:(\d{2})(\d{2})(\d{2}))?\s*(체크|카드|신용)[가-힣]*\s*취소/.exec(text);
+  if (card) {
+    const when = card[2] ? ` (${Number(card[2])}/${Number(card[3])})` : "";
+    return `${card[4] === "체크" ? "체크카드" : "카드"} 결제 취소${when}`;
+  }
+  return direction === "IN" ? "출금 정정(되돌려 받음)" : "입금 정정(되돌려 줌)";
 }
 
 function findBank(text: string): string | null {

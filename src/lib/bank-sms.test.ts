@@ -166,3 +166,26 @@ test("여러 통을 붙여넣으면 나눈다", () => {
   const parts = splitMessages("[Web발신]\n신한 입금 1,000 가\n[Web발신]\n신한 출금 2,000 나");
   assert.equal(parts.length, 2);
 });
+
+test("기업은행 출금정정 — 체크카드 결제 취소로 돈이 돌아옴", () => {
+  const r = parseBankMessage(
+    "[Web발신]\n2026/10/01 07:42\n출금정정 52,500원\n잔액 2,193,844원\n260923체크취소\n461***52704016\n기업",
+    NOW,
+  );
+  assert.ok(r);
+  assert.equal(r.direction, "IN");
+  assert.equal(r.correction, true);
+  assert.equal(r.amount, 52_500);
+  assert.equal(r.balance, 2_193_844);
+  assert.equal(r.bankName, "IBK기업");
+  assert.equal(r.counterparty, "체크카드 결제 취소 (9/23)");
+  assert.deepEqual(r.occurredAt, new Date(2026, 9, 1, 7, 42));
+});
+
+test("입금취소는 나간 돈", () => {
+  const r = parseBankMessage("[Web발신]\n농협 입금취소 30,000원\n06/12 11:02 301-****-2640-41 잔액1,275,428원", NOW);
+  assert.ok(r);
+  assert.equal(r.direction, "OUT");
+  assert.equal(r.amount, 30_000);
+  assert.equal(r.correction, true);
+});
