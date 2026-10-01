@@ -48,7 +48,7 @@ export function Sidebar({
       <Link href="/dashboard" className="flex items-center gap-3 px-6 pt-7 pb-6">
         <LogoMark size={38} decorative className="shrink-0" />
         <div className="min-w-0">
-          <p className="title-serif truncate text-[1.05rem] leading-tight text-ink">{churchName}</p>
+          <p className="title truncate text-[1.05rem] leading-tight text-ink">{churchName}</p>
           <p className="mt-0.5 text-[0.7rem] font-medium tracking-[0.02em] text-ink-3">
             심플한 교회관리
           </p>
@@ -69,16 +69,11 @@ export function Sidebar({
                     key={item.href}
                     href={item.href}
                     aria-current={active ? "page" : undefined}
-                    className={`relative flex items-center gap-3 rounded-lg px-3 py-2 text-[0.9rem] font-semibold transition-colors ${
-                      active
-                        ? "bg-surface text-ink shadow-[var(--shadow-sm)] ring-1 ring-line"
-                        : "text-ink-2 hover:bg-surface-2 hover:text-ink"
+                    className={`relative flex items-center gap-3 rounded-xl px-3 py-2 text-[0.9rem] font-semibold transition-colors ${
+                      active ? "bg-primary-soft text-primary-soft-ink" : "text-ink-2 hover:bg-surface-2 hover:text-ink"
                     }`}
                   >
-                    {active && (
-                      <span className="absolute left-0 top-2 bottom-2 w-[3px] rounded-full bg-accent-bright" />
-                    )}
-                    <Icon width={19} height={19} className={`shrink-0 ${active ? "text-primary" : ""}`} />
+                    <Icon width={20} height={20} className={`shrink-0 ${active ? "text-primary" : "text-ink-3"}`} />
                     <span className="flex-1">{item.label}</span>
                     {badge > 0 && (
                       <span className="tnum rounded-full bg-primary px-1.5 py-px text-[0.68rem] font-bold text-primary-ink">
@@ -120,7 +115,7 @@ export function MobileTopBar({ churchName }: { churchName: string }) {
       <div className="flex items-center gap-2.5 px-4 py-3">
         <Link href="/dashboard" className="flex min-w-0 items-center gap-2.5">
           <LogoMark size={30} decorative className="shrink-0" />
-          <span className="title-serif truncate text-[1rem] text-ink">{churchName}</span>
+          <span className="title truncate text-[1rem] text-ink">{churchName}</span>
         </Link>
       </div>
     </header>
@@ -162,9 +157,8 @@ export function MobileTabBar({ role, badges = {} }: { role: Role; badges?: Recor
               active ? "text-primary" : "text-ink-3"
             }`}
           >
-            {active && <span className="absolute top-0 h-[2px] w-8 rounded-full bg-accent-bright" />}
             <span className="relative">
-              <Icon width={22} height={22} strokeWidth={active ? 2 : 1.7} />
+              <Icon width={24} height={24} />
               {badge > 0 && (
                 <span className="absolute -right-2 -top-1 h-2 w-2 rounded-full bg-expense ring-2 ring-surface" />
               )}

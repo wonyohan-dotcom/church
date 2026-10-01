@@ -69,7 +69,7 @@ export function MemberImporter() {
   if (done) {
     return (
       <div className="card p-6">
-        <p className="title-serif text-xl text-ink">
+        <p className="title text-xl text-ink">
           <span className="tnum">{done.created}</span>명을 등록했습니다.
         </p>
         <p className="mt-1 text-sm text-ink-3">교구·구역 이름이 처음 보는 것이면 새로 만들어 연결했습니다.</p>

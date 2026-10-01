@@ -15,7 +15,7 @@ export function LegalShell({ title, updated, children }: { title: string; update
         </div>
       </header>
       <main className="mx-auto max-w-2xl px-5 pb-20 pt-8">
-        <h1 className="title-serif text-[1.7rem] leading-tight text-ink">{title}</h1>
+        <h1 className="title text-[1.7rem] leading-tight text-ink">{title}</h1>
         {updated && <p className="mt-2 text-sm text-ink-3">{updated}</p>}
         <div className="legal mt-8 space-y-8 text-[0.95rem] leading-relaxed text-ink-2">{children}</div>
         <nav className="mt-12 flex flex-wrap gap-x-5 gap-y-2 border-t border-line pt-6 text-sm text-ink-3">

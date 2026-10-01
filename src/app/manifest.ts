@@ -7,8 +7,8 @@ export default function manifest(): MetadataRoute.Manifest {
     description: "교적 · 회계 · 기부금영수증 · 교회 역사를 한 곳에서",
     start_url: "/",
     display: "standalone",
-    background_color: "#f7f4ee",
-    theme_color: "#142f3b",
+    background_color: "#ffffff",
+    theme_color: "#ffffff",
     lang: "ko",
     icons: [
       { src: "/icon.svg", sizes: "any", type: "image/svg+xml", purpose: "any" },

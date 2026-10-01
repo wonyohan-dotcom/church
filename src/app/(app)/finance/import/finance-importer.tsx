@@ -136,7 +136,7 @@ export function FinanceImporter({
   if (done) {
     return (
       <div className="card p-6">
-        <p className="title-serif text-xl text-ink">
+        <p className="title text-xl text-ink">
           <span className="tnum">{done.created}</span>건을 장부에 입력했습니다.
         </p>
         {done.cleared && (

@@ -30,7 +30,7 @@ export function PageHeader({
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div className="min-w-0">
           {eyebrow && <p className="eyebrow mb-1.5">{eyebrow}</p>}
-          <h1 className="title-serif text-[1.6rem] leading-tight text-ink sm:text-[1.85rem]">
+          <h1 className="title text-[1.6rem] leading-tight text-ink sm:text-[1.85rem]">
             {title}
           </h1>
           {description && <p className="mt-1.5 max-w-2xl text-sm leading-relaxed text-ink-3">{description}</p>}

@@ -25,11 +25,11 @@ export function AuthShell({
         <div className="w-full max-w-[24rem]">
           <div className="mb-9 flex flex-col items-center text-center lg:hidden">
             <LogoMark size={60} decorative />
-            <p className="title-serif mt-4 text-[1.35rem] text-ink">{APP_NAME}</p>
+            <p className="title mt-4 text-[1.35rem] text-ink">{APP_NAME}</p>
           </div>
           {title && (
             <div className="mb-6 text-center lg:text-left">
-              <h1 className="title-serif text-[1.5rem] leading-tight text-ink lg:text-[1.9rem]">{title}</h1>
+              <h1 className="title text-[1.5rem] leading-tight text-ink lg:text-[1.9rem]">{title}</h1>
               {description && (
                 <p className="mt-2 text-sm leading-relaxed text-ink-3">{description}</p>
               )}
@@ -79,7 +79,7 @@ function BrandPanel() {
       </div>
 
       <div className="relative max-w-md">
-        <p className="title-serif text-[2.1rem] leading-[1.35]">
+        <p className="title text-[2.1rem] leading-[1.35]">
           교회의 살림을
           <br />
           단정하게 기록합니다
