@@ -172,10 +172,10 @@ export default async function FinancePage({
         />
         <StatCard label={`${year}년 총수입`} value={won(summary.totalIncome)} icon={<IconTrend />} />
         <StatCard
-          label={`${year}년 수입−지출`}
-          value={won(balance)}
-          sub={`총지출 ${won(summary.totalExpense)}`}
-          tone={balance >= 0 ? "primary" : "expense"}
+          label="현재 잔액"
+          value={won(current.balance)}
+          sub={`${year}년 수입−지출 ${won(balance)}`}
+          tone={current.balance >= 0 ? "primary" : "expense"}
         />
       </div>
 
@@ -183,13 +183,20 @@ export default async function FinancePage({
       <Card className="mb-5">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
-            <p className="eyebrow">현재 잔액 (장부 전체)</p>
+            <p className="eyebrow">잔액 맞춰 보기</p>
             <p className="tnum mt-1.5 text-[1.9rem] font-bold leading-none tracking-[-0.03em] text-ink">
               {won(current.balance)}
             </p>
-            <p className="mt-1.5 text-xs text-ink-3">
-              처음 기록부터 지금까지 모든 수입에서 지출을 뺀 돈
-              {carried !== 0 && ` · ${year}년 이전에서 넘어온 돈 ${won(carried)} 포함`}
+            <p className="tnum mt-1.5 text-xs leading-relaxed text-ink-3">
+              {carried !== 0 ? (
+                <>
+                  {year}년 이전에서 넘어온 돈 {won(carried)} + {year}년 수입 {won(summary.totalIncome)} − {year}년 지출{" "}
+                  {won(summary.totalExpense)}
+                  {current.balance !== carried + balance && " + 그 뒤 기록"}
+                </>
+              ) : (
+                <>처음 기록부터 지금까지 모든 수입에서 지출을 뺀 돈</>
+              )}
             </p>
           </div>
           <Link href="/finance/ledger" className="text-sm font-semibold text-primary">

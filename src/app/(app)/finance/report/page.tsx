@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { requireFinance, canManageFinance } from "@/lib/auth";
 import { getChurch } from "@/lib/church";
-import { getYearSummary } from "@/lib/finance";
+import { getBalanceBefore, getYearSummary } from "@/lib/finance";
 import { won } from "@/lib/format";
 import {
   Card,
@@ -27,7 +27,7 @@ export default async function ReportPage({
   const now = new Date();
   const year = Number(sp.year) || now.getFullYear();
 
-  const [summary, church, accounts, budgets] = await Promise.all([
+  const [summary, church, accounts, budgets, carried] = await Promise.all([
     getYearSummary(staff.churchId, year),
     getChurch(staff.churchId),
     prisma.account.findMany({
@@ -35,6 +35,7 @@ export default async function ReportPage({
       orderBy: [{ type: "asc" }, { sortOrder: "asc" }],
     }),
     prisma.budget.findMany({ where: { churchId: staff.churchId, year } }),
+    getBalanceBefore(staff.churchId, new Date(year, 0, 1)),
   ]);
 
   const budgetOf = new Map(budgets.map((b) => [b.accountId, b.amount]));
@@ -106,6 +107,20 @@ export default async function ReportPage({
             value={won(balance)}
             tone={balance >= 0 ? "primary" : "expense"}
           />
+        </div>
+
+        {/* 이월금: 지난해에서 넘어온 돈과 올해 끝에 남는 돈 (통장 잔액과 맞춰 보는 숫자) */}
+        <div className="card mb-5 grid grid-cols-3 divide-x divide-line text-center print:border print:border-black">
+          {[
+            ["전년도 이월금", carried],
+            [`${year}년 수입−지출`, balance],
+            [year === now.getFullYear() ? "현재 잔액" : "차기 이월금", carried + balance],
+          ].map(([label, value]) => (
+            <div key={label as string} className="stat px-2 py-3">
+              <p className="text-[0.72rem] font-semibold text-ink-3">{label}</p>
+              <p className="stat-value tnum mt-1 whitespace-nowrap font-bold text-ink">{won(value as number)}</p>
+            </div>
+          ))}
         </div>
 
         <div className="mb-5">

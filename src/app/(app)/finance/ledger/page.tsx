@@ -2,6 +2,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { canManageFinance, requireFinance } from "@/lib/auth";
 import { won, ymdDash } from "@/lib/format";
+import { getBalanceBefore } from "@/lib/finance";
 import { giverInclude, giverLabel, giversOf } from "@/lib/offering-givers";
 import { withBack } from "@/lib/back";
 import { GiverPickerProvider } from "@/components/giver-picker";
@@ -86,7 +87,7 @@ export default async function LedgerPage({
   };
 
   // 한 해 기록은 많아야 수천 건이라 모두 받아서 합치고 나눈다.
-  const [offerings, expenses, yearIn, yearOut] = await Promise.all([
+  const [offerings, expenses, yearIn, yearOut, carriedIn] = await Promise.all([
     type === "out"
       ? []
       : prisma.offering.findMany({ where: offeringWhere, include: { account: true, ...giverInclude } }),
@@ -100,6 +101,8 @@ export default async function LedgerPage({
       where: { churchId: staff.churchId, date: { gte: new Date(year, 0, 1), lt: new Date(year + 1, 0, 1) } },
       select: { date: true, amount: true },
     }),
+    // 그해 1월 1일에 이미 있던 돈 (이전 해에서 넘어온 돈)
+    getBalanceBefore(staff.churchId, new Date(year, 0, 1)),
   ]);
 
   const rows: Row[] = [
@@ -136,9 +139,20 @@ export default async function LedgerPage({
   const totalPages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
   const shown = rows.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
-  const monthly = Array.from({ length: 12 }, () => ({ in: 0, out: 0 }));
+  const monthly = Array.from({ length: 12 }, () => ({ in: 0, out: 0, end: 0 }));
   for (const r of yearIn) monthly[r.date.getMonth()].in += r.amount;
   for (const r of yearOut) monthly[r.date.getMonth()].out += r.amount;
+  // 달마다 그달 말 잔액 (그해 1월 1일에 넘어온 돈부터 이어서)
+  {
+    let run = carriedIn;
+    for (const m of monthly) m.end = run += m.in - m.out;
+  }
+  // 고른 기간이 끝났을 때의 잔액. 검색하거나 수입·지출만 볼 때는 잔액이 뜻이 없어 '수입−지출'을 보여 준다.
+  const showBalance = !q && type === "all";
+  const periodStart = month > 0 ? new Date(year, month - 1, 1) : new Date(year, 0, 1);
+  const startBalance = month > 0 ? (month === 1 ? carriedIn : monthly[month - 2].end) : carriedIn;
+  const endBalance = startBalance + totalIn - totalOut;
+  const periodHasToday = now >= periodStart && now < (month > 0 ? new Date(year, month, 1) : new Date(year + 1, 0, 1));
   const maxMonth = Math.max(1, ...monthly.map((m) => Math.max(m.in, m.out)));
 
   // 날짜별로 묶는다
@@ -263,7 +277,13 @@ export default async function LedgerPage({
         {[
           { label: `${period} 수입`, value: totalIn, tone: "text-income" },
           { label: `${period} 지출`, value: totalOut, tone: "text-expense" },
-          { label: "차액", value: totalIn - totalOut, tone: totalIn - totalOut >= 0 ? "text-primary" : "text-expense" },
+          showBalance
+            ? {
+                label: periodHasToday ? "현재 잔액" : month > 0 ? `${month}월 말 잔액` : `${year}년 말 잔액`,
+                value: endBalance,
+                tone: endBalance >= 0 ? "text-primary" : "text-expense",
+              }
+            : { label: "수입−지출", value: totalIn - totalOut, tone: totalIn - totalOut >= 0 ? "text-primary" : "text-expense" },
         ].map((x) => (
           <div key={x.label} className="stat px-3 py-3.5 sm:px-5">
             <p className="truncate text-[0.72rem] font-semibold text-ink-3">{x.label}</p>
@@ -271,6 +291,13 @@ export default async function LedgerPage({
           </div>
         ))}
       </div>
+
+      {showBalance && carriedIn !== 0 && (
+        <p className="-mt-3 mb-5 px-1 text-xs text-ink-3">
+          {year}년 이전에서 넘어온 돈 {won(carriedIn)} 을(를) 더한 잔액입니다. ({year}년 수입−지출{" "}
+          {won(monthly.reduce((n, m) => n + m.in - m.out, 0))})
+        </p>
+      )}
 
       {/* 달별 수입·지출 (전체 보기이고 검색하지 않을 때) */}
       {month === 0 && !q && (
@@ -307,6 +334,7 @@ export default async function LedgerPage({
                         <>
                           <span className="block font-semibold text-income">+{won(m.in)}</span>
                           <span className="block font-semibold text-expense">−{won(m.out)}</span>
+                          <span className="block text-ink-3">잔액 {won(m.end)}</span>
                         </>
                       )}
                     </span>

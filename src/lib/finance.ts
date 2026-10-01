@@ -89,6 +89,15 @@ export async function getCurrentBalance(churchId: string) {
   return { totalIncome, totalExpense, balance: totalIncome - totalExpense };
 }
 
+/** 그 날짜 직전까지 쌓인 잔액 (이전 해에서 넘어온 돈 = 이월금) */
+export async function getBalanceBefore(churchId: string, date: Date) {
+  const [income, expense] = await Promise.all([
+    prisma.offering.aggregate({ where: { churchId, date: { lt: date } }, _sum: { amount: true } }),
+    prisma.expense.aggregate({ where: { churchId, date: { lt: date } }, _sum: { amount: true } }),
+  ]);
+  return (income._sum.amount ?? 0) - (expense._sum.amount ?? 0);
+}
+
 /** 특정 교인의 해당 연도 헌금을 계정과목별로 묶는다. 기부금영수증 명세에 쓰인다. */
 export async function getMemberYearOfferings(memberId: string, year: number) {
   const offerings = await prisma.offering.findMany({
