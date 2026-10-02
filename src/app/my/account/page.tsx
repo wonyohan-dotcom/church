@@ -76,7 +76,7 @@ export default async function MyAccountPage({
         ) : (
           <form action={deleteMyChurch} className="space-y-3">
             <p className="text-sm leading-relaxed text-ink-2">
-              이 교회의 <b>마지막 관리자</b>입니다. 계정을 지우려면 교회 전체를 삭제해야 합니다. 교인·출석·심방·헌금·지출·
+              <b>계정 삭제를 지원합니다.</b> 이 교회의 <b>마지막 관리자</b>라서, 계정을 지우면 교회 전체가 함께 삭제됩니다. 교인·출석·심방·헌금·지출·
               영수증·사진 등 <b>모든 자료가 바로 지워지고 되돌릴 수 없습니다.</b>
             </p>
             <p className="text-sm text-ink-3">
@@ -96,7 +96,7 @@ export default async function MyAccountPage({
               className="btn btn-danger w-full"
               message="교회와 모든 자료를 삭제합니다. 되돌릴 수 없습니다. 계속할까요?"
             >
-              교회와 내 계정 삭제
+              계정 삭제 (교회 자료도 모두 삭제)
             </ConfirmSubmitButton>
           </form>
         )}
