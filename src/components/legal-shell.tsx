@@ -6,7 +6,7 @@ import { APP_NAME, LogoMark } from "./logo";
 export function LegalShell({ title, updated, children }: { title: string; updated?: string; children: ReactNode }) {
   return (
     <div className="min-h-dvh bg-bg">
-      <header className="border-b border-line bg-surface">
+      <header className="border-b border-line bg-surface pt-[env(safe-area-inset-top)]">
         <div className="mx-auto flex max-w-2xl items-center gap-2.5 px-5 py-3.5">
           <Link href="/" className="flex items-center gap-2.5">
             <LogoMark size={32} decorative />

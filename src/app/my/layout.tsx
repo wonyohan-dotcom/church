@@ -14,7 +14,7 @@ export default async function MyLayout({ children }: { children: React.ReactNode
 
   return (
     <div className="min-h-dvh bg-bg">
-      <header className="no-print sticky top-0 z-30 border-b border-line bg-surface/90 backdrop-blur">
+      <header className="no-print sticky top-0 z-30 border-b border-line bg-surface/90 pt-[env(safe-area-inset-top)] backdrop-blur">
         <div className="mx-auto flex max-w-3xl items-center justify-between gap-3 px-4 py-3">
           <Link href="/my" className="flex min-w-0 items-center gap-2.5">
             <LogoMark size={36} decorative className="shrink-0" />
