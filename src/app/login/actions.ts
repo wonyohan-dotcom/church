@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { TRIAL, ensureTrial } from "@/lib/demo";
 import { createSession, verifyPassword } from "@/lib/auth";
 import { STAFF_ROLES, type Role, type UserStatus } from "@/lib/constants";
 
@@ -15,6 +16,9 @@ export async function login(_prev: LoginState, formData: FormData): Promise<Logi
   if (!loginId || !password) {
     return { error: "아이디와 비밀번호를 모두 입력해 주세요." };
   }
+
+  // 삭제 시험용 계정은 지워졌어도 로그인하면 다시 만들어 준다.
+  if (loginId === TRIAL.loginId) await ensureTrial().catch(() => {});
 
   const user = await prisma.user.findUnique({
     where: { loginId },

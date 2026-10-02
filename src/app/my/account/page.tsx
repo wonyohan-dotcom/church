@@ -55,6 +55,12 @@ export default async function MyAccountPage({
         </p>
       </Card>
 
+      <form action="/api/logout" method="post" className="mb-5">
+        <button type="submit" className="btn btn-ghost w-full">
+          로그아웃
+        </button>
+      </form>
+
       <Card>
         <CardTitle>계정 삭제</CardTitle>
         {church.isDemo ? (

@@ -383,3 +383,53 @@ const HISTORY = [
   ["2020-03-08", "담임목사 취임", "PASTOR", "제2대 담임목사가 취임하였습니다."],
   ["2025-03-09", "창립 30주년 감사예배", "EVENT", "지난 30년의 은혜를 돌아보며 감사예배를 드렸습니다."],
 ] as const;
+
+/**
+ * 삭제 시험용 계정 (앱스토어 심사 영상 · 계정 삭제 확인용).
+ * 체험용 교회(demo)는 삭제가 막혀 있으므로, 이 계정은 진짜 교회처럼 삭제할 수 있다.
+ * 로그인할 때마다 없으면 새로 만든다. 그래서 지워도 다음에 다시 로그인하면 되살아난다.
+ */
+export const TRIAL = { loginId: "trial", password: "trial1234", churchName: "시험교회", name: "시험 관리자" } as const;
+
+export async function ensureTrial() {
+  const existing = await prisma.user.findUnique({ where: { loginId: TRIAL.loginId } });
+  if (existing) return;
+  const password = await hashPassword(TRIAL.password);
+  await prisma.$transaction(async (tx) => {
+    const church = await tx.church.create({
+      data: {
+        name: TRIAL.churchName,
+        joinOpen: false,
+        accounts: {
+          create: DEFAULT_ACCOUNTS.map((a, i) => ({
+            code: a.code,
+            name: a.name,
+            type: a.type,
+            category: a.category ?? null,
+            isOffering: a.isOffering ?? false,
+            deductible: a.deductible ?? true,
+            sortOrder: i,
+          })),
+        },
+        members: {
+          create: ["김은혜", "박성실", "이믿음"].map((name, i) => ({
+            code: String(i + 1).padStart(4, "0"),
+            name,
+            status: "ACTIVE",
+          })),
+        },
+      },
+    });
+    await tx.user.create({
+      data: {
+        loginId: TRIAL.loginId,
+        name: TRIAL.name,
+        password,
+        role: "ADMIN",
+        status: "ACTIVE",
+        churchId: church.id,
+        approvedAt: new Date(),
+      },
+    });
+  });
+}
