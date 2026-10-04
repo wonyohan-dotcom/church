@@ -21,7 +21,7 @@ export function AuthShell({
   return (
     <main className="min-h-dvh bg-bg lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
       <BrandPanel />
-      <div className="flex min-h-dvh flex-col items-center justify-center px-5 py-12 lg:px-12">
+      <div className="flex min-h-dvh flex-col items-center justify-center px-5 pb-[calc(3rem+env(safe-area-inset-bottom))] pt-[calc(3rem+env(safe-area-inset-top))] lg:px-12">
         <div className="w-full max-w-[24rem]">
           <div className="mb-9 flex flex-col items-center text-center lg:hidden">
             <LogoMark size={60} decorative />

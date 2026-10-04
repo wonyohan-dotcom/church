@@ -27,7 +27,7 @@ export default async function PendingPage() {
   const rejected = user.status === "REJECTED";
 
   return (
-    <main className="flex min-h-dvh items-center justify-center bg-bg px-5 py-10">
+    <main className="flex min-h-dvh items-center justify-center bg-bg px-5 pb-[calc(2.5rem+env(safe-area-inset-bottom))] pt-[calc(2.5rem+env(safe-area-inset-top))]">
       <div className="w-full max-w-[24rem] text-center">
         <span
           className={`mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl ${
