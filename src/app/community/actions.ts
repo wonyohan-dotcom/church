@@ -188,28 +188,41 @@ export async function removeReported(formData: FormData) {
   revalidatePath("/community", "layout");
 }
 
-/* ── 이번 주 콘티 ───────────────────────── */
+/* ── 주보 ───────────────────────────────── */
 
-export async function saveSetlist(formData: FormData) {
+export async function saveBulletin(formData: FormData) {
   const user = await requireStaff();
   const id = str(formData.get("id"));
-  const title = (str(formData.get("title")) ?? "").slice(0, 80);
   const serviceDate = parseDate(formData.get("serviceDate"));
-  const note = (str(formData.get("note")) ?? "").slice(0, 500) || null;
+  const title = (str(formData.get("title")) ?? "주일 예배 주보").slice(0, 80);
+  const text = (name: string, max: number) => (str(formData.get(name)) ?? "").slice(0, max) || null;
   const playlistRaw = str(formData.get("playlistUrl"));
   const playlistUrl = playlistRaw && youtubePlaylistId(playlistRaw) ? playlistRaw : null;
   const songs = parseSongLines(String(formData.get("songs") ?? ""));
 
-  const back = id ? `/community/setlist/${id}/edit` : "/community/setlist/new";
-  if (!title || !serviceDate) redirect(`${back}?error=required`);
+  const back = id ? `/community/bulletin/${id}/edit` : "/community/bulletin/new";
+  if (!serviceDate) redirect(`${back}?error=required`);
   if (playlistRaw && !playlistUrl) redirect(`${back}?error=playlist`);
-  if (songs.length === 0 && !playlistUrl) redirect(`${back}?error=songs`);
 
-  const data = { title, serviceDate, note, playlistUrl };
-  let setlistId = id;
+  const data = {
+    title,
+    serviceDate,
+    note: text("note", 500),
+    playlistUrl,
+    sermonTitle: text("sermonTitle", 120),
+    scripture: text("scripture", 120),
+    worshipOrder: text("worshipOrder", 1500),
+    announcements: text("announcements", 3000),
+    prayers: text("prayers", 3000),
+  };
+  if (!data.note && !data.playlistUrl && !data.sermonTitle && !data.scripture && !data.worshipOrder && !data.announcements && !data.prayers && songs.length === 0) {
+    redirect(`${back}?error=empty`);
+  }
+
+  let bulletinId = id;
   if (id) {
     const exists = await prisma.setlist.findFirst({ where: { id, churchId: user.churchId } });
-    if (!exists) redirect("/community/setlist");
+    if (!exists) redirect("/community/bulletin");
     await prisma.$transaction([
       prisma.setlist.update({ where: { id }, data }),
       prisma.setlistSong.deleteMany({ where: { setlistId: id } }),
@@ -219,15 +232,15 @@ export async function saveSetlist(formData: FormData) {
     const created = await prisma.setlist.create({
       data: { ...data, churchId: user.churchId, songs: { create: songs.map((s, i) => ({ ...s, sortOrder: i })) } },
     });
-    setlistId = created.id;
+    bulletinId = created.id;
   }
-  revalidatePath("/community/setlist");
-  redirect(`/community/setlist?id=${setlistId}`);
+  revalidatePath("/community/bulletin");
+  redirect(`/community/bulletin?id=${bulletinId}`);
 }
 
-export async function deleteSetlist(formData: FormData) {
+export async function deleteBulletin(formData: FormData) {
   const user = await requireStaff();
   await prisma.setlist.deleteMany({ where: { id: String(formData.get("id")), churchId: user.churchId } });
-  revalidatePath("/community/setlist");
-  redirect("/community/setlist");
+  revalidatePath("/community/bulletin");
+  redirect("/community/bulletin");
 }

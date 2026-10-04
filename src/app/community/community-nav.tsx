@@ -5,8 +5,8 @@ import { usePathname } from "next/navigation";
 
 const ITEMS = [
   { href: "/community", label: "사진" },
+  { href: "/community/bulletin", label: "주보" },
   { href: "/community/chat", label: "채팅" },
-  { href: "/community/setlist", label: "콘티" },
 ];
 
 export function CommunityNav() {

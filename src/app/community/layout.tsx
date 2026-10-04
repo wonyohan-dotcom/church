@@ -52,7 +52,7 @@ function Terms() {
     <div className="card p-6">
       <h1 className="title text-[1.35rem] text-ink">교회 소통을 시작하기 전에</h1>
       <p className="mt-2 text-sm leading-relaxed text-ink-2">
-        사진을 나누고, 댓글과 채팅으로 이야기하고, 이번 주 콘티를 보는 우리 교회 안의 공간입니다.
+        사진을 나누고, 댓글과 채팅으로 이야기하고, 이번 주 주보를 보는 우리 교회 안의 공간입니다.
         같은 교회 성도만 볼 수 있습니다.
       </p>
       <ul className="mt-4 space-y-2 text-sm leading-relaxed text-ink-2 [&_li]:ml-5 [&_li]:list-disc">

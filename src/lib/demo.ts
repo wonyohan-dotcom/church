@@ -184,7 +184,7 @@ export async function resetDemo(now = new Date()) {
         create: { loginId: DEMO.member.loginId, ...memberData },
       });
 
-      // ── 교회 소통: 예시 글 · 채팅 · 이번 주 콘티 ──
+      // ── 교회 소통: 예시 글 · 채팅 · 이번 주 주보 ──
       const demoAdmin = await tx.user.findUniqueOrThrow({ where: { loginId: DEMO.admin.loginId } });
       const demoMember = await tx.user.findUniqueOrThrow({ where: { loginId: DEMO.member.loginId } });
       const ago = (min: number) => new Date(now.getTime() - min * 60_000);
@@ -204,16 +204,21 @@ export async function resetDemo(now = new Date()) {
         data: [
           { churchId, authorId: demoAdmin.id, body: "안녕하세요, 우리 교회 대화방입니다. 편하게 이야기 나눠요.", createdAt: ago(180) },
           { churchId, authorId: demoMember.id, body: "안녕하세요! 이번 주 찬양 연습은 몇 시인가요?", createdAt: ago(40) },
-          { churchId, authorId: demoAdmin.id, body: "토요일 오후 3시입니다. 콘티는 ‘콘티’ 탭에서 확인하세요.", createdAt: ago(35) },
+          { churchId, authorId: demoAdmin.id, body: "토요일 오후 3시입니다. 이번 주 주보는 ‘주보’ 탭에서 확인하세요.", createdAt: ago(35) },
         ],
       });
       const sundayAhead = new Date(now.getFullYear(), now.getMonth(), now.getDate() + ((7 - now.getDay()) % 7));
       await tx.setlist.create({
         data: {
           churchId,
-          title: "주일 예배 콘티",
+          title: "주일 예배 주보",
           serviceDate: sundayAhead,
+          sermonTitle: "은혜 안에서 자라가는 교회",
+          scripture: "에베소서 4:11-16",
           note: "찬양 연습은 토요일 오후 3시입니다. (예시 자료)",
+          worshipOrder: "묵도\n찬송 | 다 같이\n대표 기도 | 김장로\n성경 봉독 | 에베소서 4:11-16\n찬양 | 찬양팀\n말씀 | 담임목사\n봉헌 기도\n광고\n축도",
+          announcements: "예배 후 12시 30분에 교육관에서 함께 식사합니다.\n새가족 환영회가 다음 주일 오후 1시에 있습니다.\n청년부 가을 수련회 신청을 받습니다. (사무실)",
+          prayers: "아픈 성도들의 회복을 위해\n새로 오신 가정이 교회에 잘 정착하도록\n다음 세대가 믿음 안에서 자라도록",
           songs: {
             create: [
               { sortOrder: 0, title: "예배합니다", musicKey: "G" },

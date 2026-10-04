@@ -5,7 +5,7 @@ import { IconCamera, IconChat, IconMusic } from "./icons";
 const TILES = [
   { href: "/community", label: "교회 사진", icon: IconCamera },
   { href: "/community/chat", label: "전체 채팅", icon: IconChat },
-  { href: "/community/setlist", label: "이번 주 콘티", icon: IconMusic },
+  { href: "/community/bulletin", label: "이번 주 주보", icon: IconMusic },
 ];
 
 /** 홈 화면의 교회 소통 바로가기 (사진 · 채팅 · 콘티) */

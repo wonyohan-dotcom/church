@@ -654,13 +654,19 @@ model ChatMessage {
   @@index([churchId, createdAt])
 }
 
-// 이번 주 콘티(찬양 목록). 곡마다 유튜브 링크를 붙인다.
+// 주보(이번 주 예배 안내). 찬양 목록(콘티)에는 곡마다 유튜브 링크를 붙인다.
 model Setlist {
   id          String   @id @default(cuid())
   title       String
   serviceDate DateTime
   note        String?
   playlistUrl String? // 이미 만들어 둔 유튜브 재생목록 주소(선택)
+  // 주보 — 한 주의 예배 안내. 줄바꿈으로 나눈 글로 저장한다.
+  sermonTitle   String?
+  scripture     String?
+  worshipOrder  String? // 예배 순서: 한 줄에 하나, "순서 | 담당·내용"
+  announcements String? // 광고(알림 사항): 한 줄에 하나
+  prayers       String? // 기도 제목: 한 줄에 하나
 
   churchId String
   church   Church @relation(fields: [churchId], references: [id], onDelete: Cascade)

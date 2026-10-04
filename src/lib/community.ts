@@ -4,7 +4,7 @@ import { communityEnabled } from "./native-app";
 import { requireUser, getSession } from "./auth";
 import type { SessionUser } from "./session";
 
-/** 사진·채팅·콘티 같은 교회 소통 기능에서 쓰는 도우미 */
+/** 사진·주보·채팅 같은 교회 소통 기능에서 쓰는 도우미 */
 
 export * from "./community-limits";
 
