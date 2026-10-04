@@ -39,9 +39,8 @@ export async function deleteMyChurch(formData: FormData) {
   if (user.role !== "ADMIN") redirect("/my/account");
   if (await isDemoChurch(user.churchId)) redirect("/my/account?error=demo");
 
-  const church = await prisma.church.findUnique({ where: { id: user.churchId }, select: { name: true } });
-  const typed = String(formData.get("churchName") ?? "").replace(/\s/g, "");
-  if (!church || typed !== church.name.replace(/\s/g, "")) redirect("/my/account?error=church-name");
+  // 계정 삭제는 누구에게나 같은 절차(‘삭제’ 확인)로 둔다. 마지막 관리자는 교회 자료도 함께 지워진다.
+  if (String(formData.get("confirm") ?? "").trim() !== "삭제") redirect("/my/account?error=confirm");
 
   await deleteChurchData(user.churchId);
   await destroySession();

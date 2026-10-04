@@ -12,7 +12,6 @@ const ERROR: Record<string, string> = {
   demo: "체험용 계정과 체험용 교회는 삭제할 수 없습니다. 매일 새벽 원래대로 돌아갑니다.",
   confirm: "확인 칸에 ‘삭제’ 두 글자를 적어 주세요.",
   "last-admin": "교회의 마지막 관리자라서 계정만 지울 수 없습니다. 아래에서 다른 관리자를 지정하거나 교회를 삭제해 주세요.",
-  "church-name": "교회 이름이 맞지 않습니다. 화면에 보이는 이름을 그대로 적어 주세요.",
 };
 
 export default async function MyAccountPage({
@@ -86,17 +85,15 @@ export default async function MyAccountPage({
               영수증·사진 등 <b>모든 자료가 바로 지워지고 되돌릴 수 없습니다.</b>
             </p>
             <p className="text-sm text-ink-3">
-              교회는 두고 내 계정만 지우려면, 먼저{" "}
+              교회 자료는 두고 내 계정만 지우려면, 먼저{" "}
               <Link href="/settings" className="text-primary underline">
                 설정 → 사용자
               </Link>
               에서 다른 분을 관리자로 지정해 주세요.
             </p>
             <label className="block text-sm">
-              <span className="label">
-                확인을 위해 교회 이름 <b>{church.name}</b> 을(를) 적어 주세요
-              </span>
-              <input name="churchName" className="field" autoComplete="off" required />
+              <span className="label">확인을 위해 ‘삭제’라고 적어 주세요</span>
+              <input name="confirm" className="field" autoComplete="off" required />
             </label>
             <ConfirmSubmitButton
               className="btn btn-danger w-full"
