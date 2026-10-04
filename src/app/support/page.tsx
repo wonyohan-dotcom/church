@@ -27,8 +27,8 @@ export default function SupportPage() {
         <p>
           <b>우리 교회도 쓸 수 있나요?</b>
           <br />
-          네. 로그인 화면의 <Link href="/register-church" className="text-primary underline">교회 등록</Link>에서 교회를
-          만들면 바로 쓸 수 있습니다. 교회마다 자료가 완전히 분리됩니다.
+          네. 웹 브라우저로 <Link href="/register-church" className="text-primary underline">교회 등록</Link>에서 교회를
+          만든 뒤, 같은 아이디로 앱에 로그인하시면 됩니다. 교회마다 자료가 완전히 분리됩니다.
         </p>
         <p>
           <b>먼저 둘러볼 수 있나요?</b>

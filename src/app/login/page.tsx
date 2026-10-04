@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
 import { STAFF_ROLES, type Role } from "@/lib/constants";
 import { AuthShell } from "@/components/auth-shell";
+import { isNativeApp } from "@/lib/native-app";
 import { LoginForm } from "./login-form";
 
 export const metadata = { title: "로그인" };
@@ -20,6 +21,7 @@ export default async function LoginPage({
   }
 
   const { next, demo, deleted } = await searchParams;
+  const native = await isNativeApp();
 
   return (
     <AuthShell
@@ -33,12 +35,14 @@ export default async function LoginPage({
               성도 가입 신청
             </Link>
           </p>
-          <p className="text-ink-3">
-            교회를 새로 등록하시려면{" "}
-            <Link href="/register-church" className="font-semibold text-primary hover:underline">
-              교회 등록
-            </Link>
-          </p>
+          {!native && (
+            <p className="text-ink-3">
+              교회를 새로 등록하시려면{" "}
+              <Link href="/register-church" className="font-semibold text-primary hover:underline">
+                교회 등록
+              </Link>
+            </p>
+          )}
         </>
       }
     >

@@ -7,6 +7,7 @@ import { createSession, hashPassword, requireAdmin } from "@/lib/auth";
 import { logAudit } from "@/lib/church";
 import { DEFAULT_ACCOUNTS, ROLES, type Role } from "@/lib/constants";
 import { str } from "@/lib/format";
+import { isNativeApp } from "@/lib/native-app";
 import { notifyRoles, notifyUser } from "@/lib/push";
 
 /* ── 교회 등록 ───────────────────────────── */
@@ -21,6 +22,7 @@ export async function registerChurch(
   _prev: RegisterState,
   formData: FormData,
 ): Promise<RegisterState> {
+  if (await isNativeApp()) return { error: "교회 등록은 웹 브라우저에서 해 주세요." };
   const churchName = str(formData.get("churchName"));
   const name = str(formData.get("name"));
   const loginId = str(formData.get("loginId"));

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
 import { AuthShell } from "@/components/auth-shell";
+import { isNativeApp } from "@/lib/native-app";
 import { RegisterChurchForm } from "./form";
 
 export const metadata = { title: "교회 등록" };
@@ -10,6 +11,7 @@ export const dynamic = "force-dynamic";
 export default async function RegisterChurchPage() {
   const session = await getSession();
   if (session) redirect("/");
+  if (await isNativeApp()) redirect("/login");
 
   return (
     <AuthShell

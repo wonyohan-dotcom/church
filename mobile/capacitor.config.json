@@ -9,6 +9,7 @@
   "ios": {
     "contentInset": "never",
     "backgroundColor": "#f6f5f2",
-    "limitsNavigationsToAppBoundDomains": false
+    "limitsNavigationsToAppBoundDomains": false,
+    "appendUserAgent": "SimpleChurchApp"
   }
 }
