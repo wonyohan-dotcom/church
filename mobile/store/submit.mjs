@@ -373,10 +373,18 @@ if (!SUBMIT) {
       say("이미 심사 대기 중입니다.");
     } else {
       // 거절·정보 요청으로 멈춘 심사는 항목을 '해결됨' 으로 표시한 뒤 다시 제출한다.
+      // 그게 안 되면 멈춘 심사를 닫고 새 심사로 낸다(답장 기록은 그대로 남는다).
       if (sub?.attributes.state === "UNRESOLVED_ISSUES") {
-        const items = await get(`/v1/reviewSubmissions/${sub.id}/items`);
-        for (const it of items.data) {
-          await patch(`/v1/reviewSubmissionItems/${it.id}`, { data: { type: "reviewSubmissionItems", id: it.id, attributes: { resolved: true } } });
+        try {
+          const items = await get(`/v1/reviewSubmissions/${sub.id}/items`);
+          for (const it of items.data) {
+            await patch(`/v1/reviewSubmissionItems/${it.id}`, { data: { type: "reviewSubmissionItems", id: it.id, attributes: { resolved: true } } });
+          }
+        } catch (e) {
+          say(`해결됨 표시 실패(${e.message.slice(0, 60)}) — 멈춘 심사를 닫고 새로 제출합니다.`);
+          await patch(`/v1/reviewSubmissions/${sub.id}`, { data: { type: "reviewSubmissions", id: sub.id, attributes: { canceled: true } } });
+          await new Promise((r) => setTimeout(r, 8000));
+          sub = null;
         }
       }
       if (!sub) {
