@@ -600,8 +600,9 @@ model AuditLog {
 // ─────────────────────────────────────────────
 
 model Post {
-  id   String @id @default(cuid())
-  body String @default("")
+  id     String  @id @default(cuid())
+  body   String  @default("")
+  pinned Boolean @default(false) // 공지: 사진 화면 맨 위에 고정 (교역자·관리자만)
 
   churchId String
   church   Church @relation(fields: [churchId], references: [id], onDelete: Cascade)

@@ -1,6 +1,6 @@
 import { IconMore } from "@/components/icons";
 import { REPORT_REASONS } from "@/lib/community";
-import { blockUser, reportContent } from "./actions";
+import { blockUser, reportContent, togglePin } from "./actions";
 
 /**
  * 글·댓글 옆의 ⋯ 메뉴. 내 글이면 삭제, 남의 글이면 신고·차단, 관리자는 삭제도 할 수 있다.
@@ -13,6 +13,7 @@ export function ContentMenu({
   meId,
   canModerate,
   deleteAction,
+  pin,
 }: {
   kind: "POST" | "COMMENT";
   targetId: string;
@@ -20,6 +21,8 @@ export function ContentMenu({
   meId: string;
   canModerate: boolean;
   deleteAction: (formData: FormData) => Promise<void>;
+  /** 교역자·관리자에게만 넘긴다: 공지 고정/해제 */
+  pin?: { pinned: boolean };
 }) {
   const mine = authorId === meId;
   return (
@@ -31,6 +34,14 @@ export function ContentMenu({
         <IconMore width={18} height={18} />
       </summary>
       <div className="absolute right-0 z-20 mt-1 w-52 rounded-2xl border border-line bg-surface p-2 text-sm shadow-[var(--shadow-sm)]">
+        {pin && (
+          <form action={togglePin}>
+            <input type="hidden" name="id" value={targetId} />
+            <button type="submit" className="w-full rounded-lg px-3 py-2 text-left font-semibold text-ink hover:bg-surface-2">
+              {pin.pinned ? "공지 해제" : "공지로 고정"}
+            </button>
+          </form>
+        )}
         {(mine || canModerate) && (
           <form action={deleteAction}>
             <input type="hidden" name="id" value={targetId} />

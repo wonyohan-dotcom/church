@@ -16,11 +16,12 @@ function friendly(e: unknown): string {
 }
 
 /** 사진은 한 장씩 따로 올린다(요청 크기 한도 때문). 글을 먼저 만들고 사진을 차례로 붙인다. */
-export function PostComposer() {
+export function PostComposer({ canPin = false }: { canPin?: boolean }) {
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const urls = useRef<string[]>([]);
   const [body, setBody] = useState("");
+  const [pinned, setPinned] = useState(false);
   const [picked, setPicked] = useState<Picked[]>([]);
   const [busy, setBusy] = useState(false);
   const [preparing, setPreparing] = useState(false);
@@ -61,6 +62,7 @@ export function PostComposer() {
       const fd = new FormData();
       fd.set("body", body);
       fd.set("hasPhoto", picked.length ? "1" : "0");
+      if (pinned) fd.set("pinned", "1");
       const res = await createPost(fd);
       if (!res.id) throw new Error(res.error ?? "올리지 못했습니다.");
       for (const p of picked) {
@@ -72,6 +74,7 @@ export function PostComposer() {
       urls.current = [];
       setPicked([]);
       setBody("");
+      setPinned(false);
       router.refresh();
     } catch (e) {
       setError(friendly(e));
@@ -110,6 +113,12 @@ export function PostComposer() {
         </ul>
       )}
       <input ref={inputRef} type="file" accept="image/*" multiple className="sr-only" onChange={onChoose} disabled={busy || preparing} />
+      {canPin && (
+        <label className="mt-3 flex items-center gap-2 text-sm text-ink-2">
+          <input type="checkbox" checked={pinned} onChange={(e) => setPinned(e.target.checked)} disabled={busy} />
+          공지로 올리기 <span className="text-xs text-ink-3">(사진 화면 맨 위에 고정)</span>
+        </label>
+      )}
       <div className="mt-3 flex items-center justify-between gap-3">
         <button
           type="button"

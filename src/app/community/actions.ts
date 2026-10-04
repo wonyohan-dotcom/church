@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { requireStaff, requireUser } from "@/lib/auth";
+import { isStaff, requireStaff, requireUser } from "@/lib/auth";
 import {
   MAX_COMMENT_BODY,
   MAX_POST_BODY,
@@ -34,7 +34,8 @@ export async function createPost(formData: FormData): Promise<{ id?: string; err
   const hasPhoto = formData.get("hasPhoto") === "1";
   if (!body && !hasPhoto) return { error: "사진이나 글을 넣어 주세요." };
 
-  const post = await prisma.post.create({ data: { churchId: user.churchId, authorId: user.id, body } });
+  const pinned = formData.get("pinned") === "1" && isStaff(user.role);
+  const post = await prisma.post.create({ data: { churchId: user.churchId, authorId: user.id, body, pinned } });
   revalidatePath("/community");
   return { id: post.id };
 }
@@ -58,6 +59,15 @@ export async function deletePost(formData: FormData) {
   if (post.authorId !== user.id && !isModerator(user)) return;
   await prisma.post.delete({ where: { id: post.id } });
   for (const p of post.photos) await deleteImage(p.url);
+  revalidatePath("/community");
+}
+
+/** 공지로 고정하거나 해제한다 (교역자·관리자). */
+export async function togglePin(formData: FormData) {
+  const user = await requireStaff();
+  const post = await prisma.post.findFirst({ where: { id: String(formData.get("id")), churchId: user.churchId } });
+  if (!post) return;
+  await prisma.post.update({ where: { id: post.id }, data: { pinned: !post.pinned } });
   revalidatePath("/community");
 }
 
