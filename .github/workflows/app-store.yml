@@ -15,6 +15,10 @@ on:
         description: "채운 뒤 심사에 제출"
         type: boolean
         default: false
+      status_only:
+        description: "상태만 조회 (아무것도 바꾸지 않음)"
+        type: boolean
+        default: false
 
 concurrency:
   group: app-store
@@ -36,4 +40,5 @@ jobs:
           ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
           APP_REVIEW_PHONE: ${{ secrets.APP_REVIEW_PHONE }}
           SUBMIT: ${{ inputs.submit && '1' || '0' }}
-        run: node mobile/store/submit.mjs
+        run: |
+          if [ "${{ inputs.status_only }}" = "true" ]; then node mobile/store/status.mjs; else node mobile/store/submit.mjs; fi
