@@ -29,7 +29,7 @@ const CONTENT_TYPES: Record<string, string> = {
 };
 
 export async function GET(
-  _req: Request,
+  req: Request,
   { params }: { params: Promise<{ path: string[] }> },
 ) {
   const session = await getSession();
@@ -49,6 +49,10 @@ export async function GET(
     return new Response("지원하지 않는 형식입니다.", { status: 400 });
   }
 
+  // ?dl=1: 같은 도메인에서 파일을 그대로 내려 준다 (휴대폰 저장·공유용).
+  const wantsDownload = new URL(req.url).searchParams.get("dl") === "1";
+  const fileName = encodeURIComponent(path.basename(key));
+
   if (supabaseConfigured()) {
     const { data, error } = await supabase()
       .storage.from(STORAGE_BUCKET)
@@ -56,6 +60,17 @@ export async function GET(
 
     if (error || !data?.signedUrl) {
       return new Response("찾을 수 없습니다.", { status: 404 });
+    }
+    if (wantsDownload) {
+      const upstream = await fetch(data.signedUrl);
+      if (!upstream.ok) return new Response("찾을 수 없습니다.", { status: 404 });
+      return new Response(await upstream.arrayBuffer(), {
+        headers: {
+          "Content-Type": contentType,
+          "Content-Disposition": `attachment; filename*=UTF-8''${fileName}`,
+          "Cache-Control": "private, no-store",
+        },
+      });
     }
     return NextResponse.redirect(data.signedUrl, { status: 307 });
   }
@@ -72,6 +87,7 @@ export async function GET(
       headers: {
         "Content-Type": contentType,
         "Content-Length": String(info.size),
+        ...(wantsDownload ? { "Content-Disposition": `attachment; filename*=UTF-8''${fileName}` } : {}),
         // 파일 이름에 임의 문자열이 들어 있어 내용이 바뀌면 이름도 바뀐다.
         // 로그인한 사용자의 브라우저에만 캐시되도록 private로 둔다.
         "Cache-Control": "private, max-age=31536000, immutable",

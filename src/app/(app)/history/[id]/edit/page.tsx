@@ -18,8 +18,13 @@ export default async function EditHistoryPage({
   const { id } = await params;
   const { error } = await searchParams;
 
-  const event = await prisma.historyEvent.findUnique({ where: { id } });
+  const event = await prisma.historyEvent.findUnique({ where: { id }, include: { attendees: { select: { memberId: true } } } });
   if (!event || event.churchId !== staff.churchId) notFound();
+  const members = await prisma.member.findMany({
+    where: { churchId: staff.churchId, OR: [{ status: { in: ["ACTIVE", "INACTIVE"] } }, { id: { in: event.attendees.map((a) => a.memberId) } }] },
+    select: { id: true, name: true, position: true, code: true },
+    orderBy: { name: "asc" },
+  });
 
   return (
     <>
@@ -38,6 +43,8 @@ export default async function EditHistoryPage({
       <HistoryForm
         action={updateHistoryEvent.bind(null, event.id)}
         event={event}
+        members={members}
+        attendeeIds={event.attendees.map((a) => a.memberId)}
         cancelHref={`/history/${event.id}`}
         submitLabel="저장하기"
       />

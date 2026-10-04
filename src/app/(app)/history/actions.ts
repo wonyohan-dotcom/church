@@ -17,7 +17,19 @@ function readForm(formData: FormData) {
     category: str(formData.get("category")) ?? "GENERAL",
     content: str(formData.get("content")),
     pinned: formData.get("pinned") === "1",
+    guests: (str(formData.get("guests")) ?? "").slice(0, 1000) || null,
   };
+}
+
+/** 참석한 교인 ID 목록(쉼표)을 우리 교회 교인으로만 걸러낸다. */
+async function readAttendees(churchId: string, formData: FormData) {
+  const ids = String(formData.get("memberIds") ?? "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  if (ids.length === 0) return [];
+  const found = await prisma.member.findMany({ where: { churchId, id: { in: ids } }, select: { id: true } });
+  return found.map((m) => m.id);
 }
 
 export async function createHistoryEvent(formData: FormData) {
@@ -26,8 +38,14 @@ export async function createHistoryEvent(formData: FormData) {
 
   if (!data.title || !data.date) redirect("/history/new?error=input");
 
+  const attendees = await readAttendees(user.churchId, formData);
   const event = await prisma.historyEvent.create({
-    data: { ...data, churchId: user.churchId, date: data.date },
+    data: {
+      ...data,
+      churchId: user.churchId,
+      date: data.date,
+      attendees: { create: attendees.map((memberId) => ({ memberId })) },
+    },
   });
 
   await logAudit({
@@ -52,10 +70,14 @@ export async function updateHistoryEvent(id: string, formData: FormData) {
   const existing = await prisma.historyEvent.findUnique({ where: { id } });
   if (!existing || existing.churchId !== user.churchId) redirect("/history");
 
-  await prisma.historyEvent.update({
-    where: { id },
-    data: { ...data, date: data.date },
-  });
+  const attendees = await readAttendees(user.churchId, formData);
+  await prisma.$transaction([
+    prisma.historyAttendee.deleteMany({ where: { eventId: id } }),
+    prisma.historyEvent.update({
+      where: { id },
+      data: { ...data, date: data.date, attendees: { create: attendees.map((memberId) => ({ memberId })) } },
+    }),
+  ]);
 
   await logAudit({
     churchId: user.churchId,

@@ -1,3 +1,4 @@
+import { prisma } from "@/lib/prisma";
 import { requireStaff } from "@/lib/auth";
 import { Alert, PageHeader } from "@/components/ui";
 import { HistoryForm } from "../history-form";
@@ -10,8 +11,13 @@ export default async function NewHistoryPage({
 }: {
   searchParams: Promise<{ error?: string }>;
 }) {
-  await requireStaff();
+  const staff = await requireStaff();
   const { error } = await searchParams;
+  const members = await prisma.member.findMany({
+    where: { churchId: staff.churchId, status: { in: ["ACTIVE", "INACTIVE"] } },
+    select: { id: true, name: true, position: true, code: true },
+    orderBy: { name: "asc" },
+  });
 
   return (
     <>
@@ -27,7 +33,7 @@ export default async function NewHistoryPage({
         </div>
       )}
 
-      <HistoryForm action={createHistoryEvent} cancelHref="/history" submitLabel="등록하기" />
+      <HistoryForm members={members} action={createHistoryEvent} cancelHref="/history" submitLabel="등록하기" />
     </>
   );
 }

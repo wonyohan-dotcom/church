@@ -3,6 +3,7 @@ import { SubmitButton } from "@/components/form";
 import { IconChat } from "@/components/icons";
 import { timeAgo } from "@/lib/community";
 import { MAX_COMMENT_BODY } from "@/lib/community-limits";
+import { GalleryOpen, GalleryRoot } from "@/components/photo-gallery";
 import { ContentMenu } from "./content-menu";
 import { addComment, deleteComment, deletePost } from "./actions";
 
@@ -68,13 +69,14 @@ export function PostCard({
       </div>
 
       {post.photos.length > 0 && (
+        <GalleryRoot photos={post.photos.map((ph) => ({ url: ph.url }))}>
         <div className="relative mt-3">
           <div className="flex snap-x snap-mandatory overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            {post.photos.map((ph) => (
-              <a key={ph.id} href={ph.url} className="aspect-square w-full shrink-0 snap-center bg-surface-2">
+            {post.photos.map((ph, i) => (
+              <GalleryOpen key={ph.id} index={i} className="aspect-square w-full shrink-0 snap-center bg-surface-2">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={ph.url} alt="" loading="lazy" className="h-full w-full object-cover" />
-              </a>
+              </GalleryOpen>
             ))}
           </div>
           {post.photos.length > 1 && (
@@ -83,6 +85,7 @@ export function PostCard({
             </span>
           )}
         </div>
+        </GalleryRoot>
       )}
 
       <div className="flex items-center gap-1.5 px-4 pt-3 text-ink">

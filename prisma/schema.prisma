@@ -211,13 +211,14 @@ model Member {
   previousChurch String?
   note           String?
 
-  offerings   Offering[]
-  coOfferings OfferingGiver[]
-  receipts    DonationReceipt[]
-  user        User?             @relation("MemberAccount")
-  attendance  AttendanceCheck[]
-  absences    AttendanceAbsence[]
-  visits      Visit[]
+  offerings     Offering[]
+  coOfferings   OfferingGiver[]
+  receipts      DonationReceipt[]
+  user          User?               @relation("MemberAccount")
+  attendance    AttendanceCheck[]
+  absences      AttendanceAbsence[]
+  historyEvents HistoryAttendee[]
+  visits        Visit[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -417,7 +418,9 @@ model HistoryEvent {
   churchId String
   church   Church @relation(fields: [churchId], references: [id], onDelete: Cascade)
 
-  photos HistoryPhoto[]
+  photos    HistoryPhoto[]
+  attendees HistoryAttendee[]
+  guests    String? // 교인이 아닌 참석자 이름 (줄바꿈·쉼표로 구분)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -659,11 +662,11 @@ model ChatMessage {
 
 // 주보(이번 주 예배 안내). 찬양 목록(콘티)에는 곡마다 유튜브 링크를 붙인다.
 model Setlist {
-  id          String   @id @default(cuid())
-  title       String
-  serviceDate DateTime
-  note        String?
-  playlistUrl String? // 이미 만들어 둔 유튜브 재생목록 주소(선택)
+  id            String   @id @default(cuid())
+  title         String
+  serviceDate   DateTime
+  note          String?
+  playlistUrl   String? // 이미 만들어 둔 유튜브 재생목록 주소(선택)
   // 주보 — 한 주의 예배 안내. 줄바꿈으로 나눈 글로 저장한다.
   sermonTitle   String?
   scripture     String?
@@ -746,4 +749,14 @@ model AttendanceVisitor {
   record   AttendanceRecord @relation(fields: [recordId], references: [id], onDelete: Cascade)
 
   @@index([recordId])
+}
+
+// 연혁에 참석한 교인
+model HistoryAttendee {
+  eventId  String
+  event    HistoryEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  memberId String
+  member   Member       @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@id([eventId, memberId])
 }

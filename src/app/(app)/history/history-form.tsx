@@ -3,16 +3,21 @@ import { Card, CardTitle, Field } from "@/components/ui";
 import { SubmitButton } from "@/components/form";
 import { HISTORY_CATEGORIES } from "@/lib/constants";
 import { ymdDash } from "@/lib/format";
+import { MembersPicker, type PickableMemberLite } from "@/components/members-picker";
 import type { HistoryEventModel } from "@/generated/prisma/models";
 
 export function HistoryForm({
   action,
   event,
+  members = [],
+  attendeeIds = [],
   cancelHref,
   submitLabel,
 }: {
   action: (formData: FormData) => void | Promise<void>;
   event?: HistoryEventModel | null;
+  members?: PickableMemberLite[];
+  attendeeIds?: string[];
   cancelHref: string;
   submitLabel: string;
 }) {
@@ -76,6 +81,12 @@ export function HistoryForm({
               rows={7}
               defaultValue={event?.content ?? ""}
             />
+          </Field>
+
+          <MembersPicker members={members} defaultIds={attendeeIds} label="참석한 교인" />
+
+          <Field label="그 밖의 참석자" hint="교인이 아닌 분(손님, 타교회 목회자 등)의 이름을 적어 두세요. 한 줄에 한 분, 또는 쉼표로 나눕니다.">
+            <textarea name="guests" className="field" rows={3} defaultValue={event?.guests ?? ""} placeholder="예) 박은서, 김철수 목사(○○교회)" />
           </Field>
 
           <label className="flex items-center gap-2 text-sm text-ink-2">
