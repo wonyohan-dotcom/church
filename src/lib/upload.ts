@@ -26,7 +26,7 @@ const ALLOWED = new Map([
   ["image/heif", "heif"],
 ]);
 
-export type UploadFolder = "members" | "receipts" | "history" | "church";
+export type UploadFolder = "members" | "receipts" | "history" | "church" | "community";
 
 /**
  * 폼에서 넘어온 이미지를 저장하고 웹 경로(`/uploads/…`)를 돌려준다.

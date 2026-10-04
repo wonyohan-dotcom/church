@@ -33,14 +33,17 @@ export function Sidebar({
   churchName,
   user,
   badges = {},
+  community = true,
 }: {
   churchName: string;
   user: { name: string; role: Role };
+  /** 교회 소통 메뉴를 보일지 */
+  community?: boolean;
   /** 메뉴 옆에 붙일 숫자 (예: 입출금 알림 대기 건수) */
   badges?: Record<string, number>;
 }) {
   const pathname = usePathname();
-  const sections = visibleSections(user.role);
+  const sections = visibleSections(user.role, { community });
   const current = activeHref(pathname, sections.flatMap((s) => s.items.map((i) => i.href)));
 
   return (

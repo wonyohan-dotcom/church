@@ -8,6 +8,7 @@ import { findLinkable } from "@/lib/offering-givers";
 import { ABSENCE_ALERT_WEEKS, HISTORY_CATEGORIES, NEWCOMER_DAYS, type HistoryCategory } from "@/lib/constants";
 import { age, won, ymd } from "@/lib/format";
 import { Alert, Avatar, Badge, Card, CardTitle, PageHeader } from "@/components/ui";
+import { CommunityShortcuts } from "@/components/community-shortcuts";
 import { MonthlyIncomeExpenseChart } from "@/components/charts";
 import {
   IconBank,
@@ -225,6 +226,8 @@ export default async function DashboardPage({
           </ul>
         )}
       </section>
+
+      <CommunityShortcuts className="mb-6" />
 
       <div className={`mb-5 grid gap-5 ${money ? "lg:grid-cols-[1.55fr_1fr]" : ""}`}>
         {money && (

@@ -3,10 +3,12 @@ import { getChurch } from "@/lib/church";
 import { prisma } from "@/lib/prisma";
 import { MobileTabBar, MobileTopBar, Sidebar } from "@/components/nav";
 import { DemoBanner } from "@/components/demo-banner";
+import { communityEnabled } from "@/lib/native-app";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const user = await requireStaff();
   const church = await getChurch(user.churchId);
+  const community = await communityEnabled();
 
   // 메뉴 옆에 "처리할 일이 있다" 는 숫자를 붙인다.
   const finance = canManageFinance(user.role);
@@ -23,7 +25,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="flex min-h-dvh bg-bg">
-      <Sidebar churchName={church.name} user={{ name: user.name, role: user.role }} badges={badges} />
+      <Sidebar churchName={church.name} user={{ name: user.name, role: user.role }} badges={badges} community={community} />
       <div className="flex min-w-0 flex-1 flex-col">
         <MobileTopBar churchName={church.name} />
         {church.isDemo && <DemoBanner />}

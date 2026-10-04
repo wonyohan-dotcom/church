@@ -13,7 +13,7 @@ const PUBLIC_PATHS = ["/login", "/signup", "/register-church", "/privacy", "/sup
 /** 승인 대기 중인 계정도 볼 수 있는 화면 */
 const PENDING_PATHS = ["/pending"];
 /** 성도(MEMBER) 역할도 접근 가능한 경로 */
-const MEMBER_PATHS = ["/my"];
+const MEMBER_PATHS = ["/my", "/community"];
 
 export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;

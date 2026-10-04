@@ -7,6 +7,7 @@ import { LogoMark } from "@/components/logo";
 import { ThemeToggle } from "@/components/nav";
 import { MyNav } from "./my-nav";
 import { DemoBanner } from "@/components/demo-banner";
+import { communityEnabled } from "@/lib/native-app";
 
 export default async function MyLayout({ children }: { children: React.ReactNode }) {
   const user = await requireUser();
@@ -40,7 +41,7 @@ export default async function MyLayout({ children }: { children: React.ReactNode
           </div>
         </div>
         <div className="mx-auto max-w-3xl px-4">
-          <MyNav />
+          <MyNav community={await communityEnabled()} />
         </div>
       </header>
 

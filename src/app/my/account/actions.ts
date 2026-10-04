@@ -7,6 +7,7 @@ import { logAudit } from "@/lib/church";
 import { deleteChurchData } from "@/lib/church-delete";
 import { isDemoChurch } from "@/lib/demo";
 import { otherAdminCount } from "@/lib/church";
+import { deleteImage } from "@/lib/upload";
 
 /**
  * 내 계정을 지운다. 로그인 정보와 알림 설정이 지워지고, 교회가 관리하는 교적·헌금 기록은 교회에 남는다.
@@ -20,7 +21,9 @@ export async function deleteMyAccount(formData: FormData) {
     redirect("/my/account?error=last-admin");
   }
 
+  const photos = await prisma.postPhoto.findMany({ where: { post: { authorId: user.id } }, select: { url: true } });
   await prisma.user.delete({ where: { id: user.id } });
+  for (const p of photos) await deleteImage(p.url);
   await logAudit({
     churchId: user.churchId,
     action: "DELETE",

@@ -84,6 +84,10 @@ export async function resetDemo(now = new Date()) {
         await tx.historyPhoto.deleteMany({ where: { churchId } });
         await tx.historyEvent.deleteMany({ where: { churchId } });
         await tx.auditLog.deleteMany({ where: { churchId } });
+        await tx.contentReport.deleteMany({ where: { churchId } });
+        await tx.post.deleteMany({ where: { churchId } });
+        await tx.chatMessage.deleteMany({ where: { churchId } });
+        await tx.setlist.deleteMany({ where: { churchId } });
         await tx.user.deleteMany({
           where: { churchId, loginId: { notIn: [DEMO.admin.loginId, DEMO.member.loginId] } },
         });
@@ -166,6 +170,7 @@ export async function resetDemo(now = new Date()) {
         churchId,
         mustChangePw: false,
         approvedAt: now,
+        communityAgreedAt: null, // 체험할 때마다 이용 안내를 볼 수 있게
       };
       await tx.user.upsert({
         where: { loginId: DEMO.admin.loginId },
@@ -177,6 +182,46 @@ export async function resetDemo(now = new Date()) {
         where: { loginId: DEMO.member.loginId },
         update: memberData,
         create: { loginId: DEMO.member.loginId, ...memberData },
+      });
+
+      // ── 교회 소통: 예시 글 · 채팅 · 이번 주 콘티 ──
+      const demoAdmin = await tx.user.findUniqueOrThrow({ where: { loginId: DEMO.admin.loginId } });
+      const demoMember = await tx.user.findUniqueOrThrow({ where: { loginId: DEMO.member.loginId } });
+      const ago = (min: number) => new Date(now.getTime() - min * 60_000);
+      const p1 = await tx.post.create({
+        data: { churchId, authorId: demoAdmin.id, body: "이번 주일 예배 후에 함께 식사합니다. 모두 환영합니다 🙂", createdAt: ago(300) },
+      });
+      const p2 = await tx.post.create({
+        data: { churchId, authorId: demoMember.id, body: "어제 새가족 환영회 사진을 곧 올릴게요. 함께해 주셔서 감사합니다!", createdAt: ago(95) },
+      });
+      await tx.postComment.createMany({
+        data: [
+          { postId: p1.id, authorId: demoMember.id, body: "참석하겠습니다!", createdAt: ago(240) },
+          { postId: p2.id, authorId: demoAdmin.id, body: "수고 많으셨습니다 😊", createdAt: ago(60) },
+        ],
+      });
+      await tx.chatMessage.createMany({
+        data: [
+          { churchId, authorId: demoAdmin.id, body: "안녕하세요, 우리 교회 대화방입니다. 편하게 이야기 나눠요.", createdAt: ago(180) },
+          { churchId, authorId: demoMember.id, body: "안녕하세요! 이번 주 찬양 연습은 몇 시인가요?", createdAt: ago(40) },
+          { churchId, authorId: demoAdmin.id, body: "토요일 오후 3시입니다. 콘티는 ‘콘티’ 탭에서 확인하세요.", createdAt: ago(35) },
+        ],
+      });
+      const sundayAhead = new Date(now.getFullYear(), now.getMonth(), now.getDate() + ((7 - now.getDay()) % 7));
+      await tx.setlist.create({
+        data: {
+          churchId,
+          title: "주일 예배 콘티",
+          serviceDate: sundayAhead,
+          note: "찬양 연습은 토요일 오후 3시입니다. (예시 자료)",
+          songs: {
+            create: [
+              { sortOrder: 0, title: "예배합니다", musicKey: "G" },
+              { sortOrder: 1, title: "주님 말씀하시면", musicKey: "D" },
+              { sortOrder: 2, title: "은혜 아니면", musicKey: "A" },
+            ],
+          },
+        },
       });
 
       // ── 헌금 (지난 1년, 주일마다) · 지출 ──

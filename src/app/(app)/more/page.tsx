@@ -3,6 +3,7 @@ import { requireStaff } from "@/lib/auth";
 import { getChurch } from "@/lib/church";
 import { ROLES } from "@/lib/constants";
 import { visibleSections } from "@/components/nav-config";
+import { communityEnabled } from "@/lib/native-app";
 import { ThemeToggle } from "@/components/nav";
 import { IconBook, IconChevronRight, IconLogout, IconSettings, IconUser } from "@/components/icons";
 
@@ -12,7 +13,7 @@ export const metadata = { title: "전체 메뉴" };
 export default async function MorePage() {
   const user = await requireStaff();
   const church = await getChurch(user.churchId);
-  const sections = visibleSections(user.role);
+  const sections = visibleSections(user.role, { community: await communityEnabled() });
 
   return (
     <>

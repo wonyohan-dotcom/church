@@ -32,10 +32,10 @@ model Church {
   logoUrl        String?
   sealUrl        String? // 직인 이미지
 
-  receiptAutoIssue Boolean @default(true) // 신청 즉시 자동 발급
+  receiptAutoIssue     Boolean @default(true) // 신청 즉시 자동 발급
   // 체험용 교회 (로그인 화면의 '체험해 보기', 앱 심사용). 매일 새 예시 자료로 다시 만든다.
-  isDemo           Boolean @default(false)
-  joinOpen         Boolean @default(true) // 성도의 가입 신청 허용 여부
+  isDemo               Boolean @default(false)
+  joinOpen             Boolean @default(true) // 성도의 가입 신청 허용 여부
   showBalanceToMembers Boolean @default(false) // 성도 화면에 교회 잔액(금액만) 보여 주기
 
   // 은행 입출금 알림 받기 (휴대폰 단축어가 문자를 보내는 주소의 비밀 열쇠)
@@ -58,6 +58,10 @@ model Church {
   bankAlerts    BankAlert[]
   attendance    AttendanceRecord[]
   visits        Visit[]
+  posts         Post[]
+  chatMessages  ChatMessage[]
+  setlists      Setlist[]
+  reports       ContentReport[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -104,6 +108,15 @@ model User {
   receiptsIssued   DonationReceipt[] @relation("ReceiptIssuer")
   auditLogs        AuditLog[]
   visitsWritten    Visit[]           @relation("VisitWriter")
+
+  // 교회 소통(사진·댓글·채팅) — 계정을 지우면 올린 글도 함께 지워진다.
+  communityAgreedAt DateTime?
+  posts             Post[]
+  postComments      PostComment[]
+  chatMessages      ChatMessage[]
+  reportsMade       ContentReport[] @relation("Reporter")
+  blocking          UserBlock[]     @relation("Blocker")
+  blockedBy         UserBlock[]     @relation("Blocked")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -580,4 +593,121 @@ model AuditLog {
 
   @@index([churchId, createdAt])
   @@index([churchId, entity])
+}
+
+// ─────────────────────────────────────────────
+// 교회 소통: 사진 나눔 · 댓글 · 전체 채팅 · 이번 주 콘티 · 신고/차단
+// ─────────────────────────────────────────────
+
+model Post {
+  id   String @id @default(cuid())
+  body String @default("")
+
+  churchId String
+  church   Church @relation(fields: [churchId], references: [id], onDelete: Cascade)
+  authorId String
+  author   User   @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  photos   PostPhoto[]
+  comments PostComment[]
+
+  createdAt DateTime @default(now())
+
+  @@index([churchId, createdAt])
+}
+
+model PostPhoto {
+  id        String @id @default(cuid())
+  url       String
+  sortOrder Int    @default(0)
+
+  postId String
+  post   Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
+}
+
+model PostComment {
+  id   String @id @default(cuid())
+  body String
+
+  postId   String
+  post     Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
+  authorId String
+  author   User   @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([postId, createdAt])
+}
+
+model ChatMessage {
+  id   String @id @default(cuid())
+  body String
+
+  churchId String
+  church   Church @relation(fields: [churchId], references: [id], onDelete: Cascade)
+  authorId String
+  author   User   @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([churchId, createdAt])
+}
+
+// 이번 주 콘티(찬양 목록). 곡마다 유튜브 링크를 붙인다.
+model Setlist {
+  id          String   @id @default(cuid())
+  title       String
+  serviceDate DateTime
+  note        String?
+  playlistUrl String? // 이미 만들어 둔 유튜브 재생목록 주소(선택)
+
+  churchId String
+  church   Church @relation(fields: [churchId], references: [id], onDelete: Cascade)
+
+  songs SetlistSong[]
+
+  createdAt DateTime @default(now())
+
+  @@index([churchId, serviceDate])
+}
+
+model SetlistSong {
+  id         String  @id @default(cuid())
+  sortOrder  Int     @default(0)
+  title      String
+  musicKey   String?
+  youtubeUrl String?
+
+  setlistId String
+  setlist   Setlist @relation(fields: [setlistId], references: [id], onDelete: Cascade)
+}
+
+// 신고. kind: POST | COMMENT | CHAT
+model ContentReport {
+  id        String   @id @default(cuid())
+  kind      String
+  targetId  String
+  reason    String?
+  excerpt   String? // 신고 당시 글 내용 (지워진 뒤에도 기록이 남도록)
+  resolved  Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  churchId   String
+  church     Church @relation(fields: [churchId], references: [id], onDelete: Cascade)
+  reporterId String
+  reporter   User   @relation("Reporter", fields: [reporterId], references: [id], onDelete: Cascade)
+
+  @@index([churchId, resolved])
+}
+
+model UserBlock {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  blockerId String
+  blocker   User   @relation("Blocker", fields: [blockerId], references: [id], onDelete: Cascade)
+  blockedId String
+  blocked   User   @relation("Blocked", fields: [blockedId], references: [id], onDelete: Cascade)
+
+  @@unique([blockerId, blockedId])
 }

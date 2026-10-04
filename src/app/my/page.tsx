@@ -7,6 +7,7 @@ import { RECEIPT_STATUS, type ReceiptStatus } from "@/lib/constants";
 import { won, ymd } from "@/lib/format";
 import { Alert, Avatar, Badge, Card, CardTitle, PageHeader } from "@/components/ui";
 import { IconChevronRight, IconReceipt } from "@/components/icons";
+import { CommunityShortcuts } from "@/components/community-shortcuts";
 import { PushToggle } from "@/components/push-toggle";
 
 export const metadata = { title: "성도 서비스" };
@@ -123,6 +124,8 @@ export default async function MyPage({
           <span className="tnum text-[0.95rem] font-bold text-ink">{won(balance)}</span>
         </div>
       )}
+
+      <CommunityShortcuts />
 
       <Card className="mb-5">
         <div className="flex items-center gap-4">

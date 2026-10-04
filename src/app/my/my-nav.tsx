@@ -6,15 +6,16 @@ import { usePathname } from "next/navigation";
 const ITEMS = [
   { href: "/my", label: "홈" },
   { href: "/my/offerings", label: "헌금 내역" },
+  { href: "/community", label: "교회 소통" },
   { href: "/my/receipts", label: "기부금영수증" },
 ];
 
-export function MyNav() {
+export function MyNav({ community = true }: { community?: boolean }) {
   const pathname = usePathname();
 
   return (
     <nav className="flex gap-1 overflow-x-auto">
-      {ITEMS.map((item) => {
+      {ITEMS.filter((i) => community || i.href !== "/community").map((item) => {
         const active =
           item.href === "/my" ? pathname === "/my" : pathname.startsWith(item.href);
         return (

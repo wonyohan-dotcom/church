@@ -3,6 +3,7 @@ import {
   IconBook,
   IconCalendarCheck,
   IconCare,
+  IconChat,
   IconHome,
   IconReceipt,
   IconSearch,
@@ -35,6 +36,7 @@ export const NAV_SECTIONS: NavSection[] = [
       { href: "/members", label: "교인", icon: IconUsers },
       { href: "/attendance", label: "출석", icon: IconCalendarCheck },
       { href: "/visits", label: "심방·상담", icon: IconCare, roles: PASTORAL_ROLES },
+      { href: "/community", label: "교회 소통", icon: IconChat },
     ],
   },
   {
@@ -57,10 +59,11 @@ export const NAV_SECTIONS: NavSection[] = [
   },
 ];
 
-export function visibleSections(role: Role): NavSection[] {
+export function visibleSections(role: Role, opts: { community?: boolean } = {}): NavSection[] {
+  const community = opts.community ?? true;
   return NAV_SECTIONS.map((s) => ({
     ...s,
-    items: s.items.filter((i) => !i.roles || i.roles.includes(role)),
+    items: s.items.filter((i) => (!i.roles || i.roles.includes(role)) && (community || i.href !== "/community")),
   })).filter((s) => s.items.length > 0);
 }
 

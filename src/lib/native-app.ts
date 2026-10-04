@@ -13,3 +13,14 @@ export async function isNativeApp(): Promise<boolean> {
   if (ua.includes("SimpleChurchApp")) return true;
   return /iPhone|iPad|iPod/.test(ua) && /AppleWebKit/.test(ua) && !/Safari\/|CriOS|FxiOS|EdgiOS/.test(ua);
 }
+
+/**
+ * 교회 소통(사진·댓글·채팅)을 App Store 앱 안에서 보여 줄지.
+ * 사용자가 올리는 글이 있는 기능은 애플이 따로 심사하므로(지침 1.2), 앱 심사가 끝난 뒤
+ * 업데이트 심사에 함께 넣을 때까지 앱 안에서는 숨긴다. 웹 브라우저에서는 바로 쓸 수 있다.
+ */
+export const COMMUNITY_IN_NATIVE_APP = false;
+
+export async function communityEnabled(): Promise<boolean> {
+  return COMMUNITY_IN_NATIVE_APP || !(await isNativeApp());
+}

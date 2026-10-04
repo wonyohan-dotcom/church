@@ -23,6 +23,14 @@ export default function SupportPage() {
         <p className="text-sm text-ink-3">보통 1~2일 안에 답을 드립니다.</p>
       </LegalSection>
 
+      <LegalSection title="사진·댓글·채팅 신고와 차단">
+        <p>
+          교회 소통(사진·댓글·채팅)에서 부적절한 글을 보셨다면 글 옆 <b>⋯</b> 메뉴(채팅은 말풍선)에서 <b>신고</b> 또는
+          <b> 차단</b>을 눌러 주세요. 신고된 글은 교회 관리자가 확인해 삭제하며, 앱 운영자에게도 {email} 로 알려 주실 수
+          있습니다. 보통 1~2일 안에 조치합니다.
+        </p>
+      </LegalSection>
+
       <LegalSection title="자주 묻는 질문">
         <p>
           <b>우리 교회도 쓸 수 있나요?</b>

@@ -23,11 +23,12 @@ export async function deleteChurchData(churchId: string, opts: { keepFiles?: boo
 }
 
 async function imageUrls(churchId: string) {
-  const [church, members, expenses, photos] = await Promise.all([
+  const [church, members, expenses, photos, postPhotos] = await Promise.all([
     prisma.church.findUnique({ where: { id: churchId }, select: { logoUrl: true, sealUrl: true } }),
     prisma.member.findMany({ where: { churchId, photoUrl: { not: null } }, select: { photoUrl: true } }),
     prisma.expense.findMany({ where: { churchId, receiptUrl: { not: null } }, select: { receiptUrl: true } }),
     prisma.historyPhoto.findMany({ where: { churchId }, select: { url: true } }),
+    prisma.postPhoto.findMany({ where: { post: { churchId } }, select: { url: true } }),
   ]);
   return [
     church?.logoUrl,
@@ -35,5 +36,6 @@ async function imageUrls(churchId: string) {
     ...members.map((m) => m.photoUrl),
     ...expenses.map((e) => e.receiptUrl),
     ...photos.map((p) => p.url),
+    ...postPhotos.map((p) => p.url),
   ].filter((u): u is string => !!u);
 }
