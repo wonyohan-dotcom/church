@@ -167,6 +167,24 @@ function PickerSheet({
   const [q, setQ] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  // 휴대폰 키보드가 올라오면 아래쪽이 가려지므로, 키보드 위로 시트를 올리고 높이를 줄인다.
+  const [kb, setKb] = useState({ gap: 0, height: 0 });
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const fit = () =>
+      setKb({
+        gap: Math.max(0, Math.round(window.innerHeight - (vv.offsetTop + vv.height))),
+        height: Math.round(vv.height),
+      });
+    fit();
+    vv.addEventListener("resize", fit);
+    vv.addEventListener("scroll", fit);
+    return () => {
+      vv.removeEventListener("resize", fit);
+      vv.removeEventListener("scroll", fit);
+    };
+  }, []);
 
   const byId = useMemo(() => new Map(members.map((m) => [m.id, m])), [members]);
   const suggested = useMemo(
@@ -214,9 +232,12 @@ function PickerSheet({
     });
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-end justify-center sm:items-center" role="dialog" aria-modal="true" aria-label="헌금자 고르기">
+    <div style={{ paddingBottom: kb.gap }} className="fixed inset-0 z-[60] flex items-end justify-center sm:items-center" role="dialog" aria-modal="true" aria-label="헌금자 고르기">
       <button type="button" className="absolute inset-0 bg-black/45" aria-label="닫기" onClick={onClose} />
-      <div className="relative flex max-h-[88dvh] w-full max-w-md flex-col rounded-t-2xl bg-surface shadow-2xl sm:rounded-2xl">
+      <div
+        style={kb.height ? { maxHeight: Math.min(kb.height - 16, window.innerHeight * 0.88) } : undefined}
+        className="relative flex max-h-[88dvh] w-full max-w-md flex-col rounded-t-2xl bg-surface shadow-2xl sm:rounded-2xl"
+      >
         <div className="border-b border-line px-4 pb-3 pt-4">
           <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-surface-3 sm:hidden" />
           <div className="flex items-start justify-between gap-3">

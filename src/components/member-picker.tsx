@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { IconSearch, IconX } from "./icons";
 
 export type PickableMember = {
@@ -32,6 +32,33 @@ export function MemberPicker({
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
   const blurTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const fieldRef = useRef<HTMLDivElement>(null);
+  const [listMax, setListMax] = useState(240);
+
+  // 휴대폰에서 키보드가 올라오면 목록 아래쪽이 키보드에 가려 이름을 고를 수 없다.
+  // 키보드를 뺀 보이는 영역 안에 목록이 들어오도록 높이를 맞추고, 입력칸을 위로 끌어올린다.
+  useEffect(() => {
+    if (!open) return;
+    const vv = window.visualViewport;
+    const fit = () => {
+      const el = fieldRef.current;
+      if (!el) return;
+      const bottomEdge = vv ? vv.offsetTop + vv.height : window.innerHeight;
+      const avail = bottomEdge - el.getBoundingClientRect().bottom - 28;
+      setListMax(Math.max(110, Math.min(320, Math.floor(avail))));
+    };
+    fit();
+    const timer = setTimeout(fit, 350);
+    vv?.addEventListener("resize", fit);
+    vv?.addEventListener("scroll", fit);
+    window.addEventListener("scroll", fit, { passive: true });
+    return () => {
+      clearTimeout(timer);
+      vv?.removeEventListener("resize", fit);
+      vv?.removeEventListener("scroll", fit);
+      window.removeEventListener("scroll", fit);
+    };
+  }, [open]);
 
   const matches = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -78,7 +105,7 @@ export function MemberPicker({
   return (
     <div className="relative">
       <span className="label">{label}</span>
-      <div className="relative">
+      <div className="relative scroll-mt-24" ref={fieldRef}>
         <IconSearch
           width={17}
           height={17}
@@ -94,7 +121,11 @@ export function MemberPicker({
             setQuery(e.target.value);
             setOpen(true);
           }}
-          onFocus={() => setOpen(true)}
+          onFocus={() => {
+            setOpen(true);
+            // 키보드가 올라온 뒤에 입력칸을 화면 위쪽으로 올려, 아래에 목록이 들어갈 자리를 만든다.
+            setTimeout(() => fieldRef.current?.scrollIntoView({ block: "start", behavior: "smooth" }), 300);
+          }}
           onBlur={() => {
             // 목록 항목을 누르는 동안 창이 닫히지 않도록 잠깐 늦춘다.
             blurTimer.current = setTimeout(() => setOpen(false), 150);
@@ -103,7 +134,10 @@ export function MemberPicker({
       </div>
 
       {open && (
-        <ul className="absolute inset-x-0 top-full z-20 mt-1 max-h-60 overflow-y-auto rounded-xl border border-line bg-surface py-1 shadow-[var(--shadow-lg)]">
+        <ul
+          style={{ maxHeight: listMax }}
+          className="absolute inset-x-0 top-full z-20 mt-1 overflow-y-auto overscroll-contain rounded-xl border border-line bg-surface py-1 shadow-[var(--shadow-lg)]"
+        >
           {matches.length === 0 ? (
             <li className="px-3 py-2.5 text-sm text-ink-3">일치하는 교인이 없습니다.</li>
           ) : (
