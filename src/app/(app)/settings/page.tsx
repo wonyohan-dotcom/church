@@ -314,6 +314,22 @@ export default async function SettingsPage({
                 </span>
               </span>
             </label>
+
+            <label className="flex items-start gap-2.5 text-sm">
+              <input
+                type="checkbox"
+                name="showBalanceToMembers"
+                value="1"
+                defaultChecked={church.showBalanceToMembers}
+                className="mt-0.5"
+              />
+              <span>
+                <span className="font-semibold text-ink">성도 화면에 교회 잔액 보여 주기</span>
+                <span className="mt-0.5 block text-xs leading-relaxed text-ink-2">
+                  켜 두면 성도님 첫 화면에 교회의 현재 잔액만 작게 보입니다. 수입·지출 내역은 보이지 않습니다.
+                </span>
+              </span>
+            </label>
           </div>
 
           <div className="flex justify-end">

@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import bcrypt from "bcryptjs";
+import { prisma } from "./prisma";
 import { FINANCE_ROLES, PASTORAL_ROLES, STAFF_ROLES, type Role } from "./constants";
 import {
   SESSION_COOKIE,
@@ -50,8 +51,22 @@ export async function getSession(): Promise<SessionUser | null> {
  * 반환값의 churchId 는 이후 모든 조회의 범위가 된다.
  */
 export async function requireUser(): Promise<SessionUser> {
-  const user = await getSession();
-  if (!user) redirect("/login");
+  const session = await getSession();
+  if (!session) redirect("/login");
+  // 로그인을 오래 유지하므로, 계정이 지워졌거나 권한이 바뀐 경우를 여기서 바로잡는다.
+  const row = await prisma.user.findUnique({
+    where: { id: session.id },
+    select: { role: true, status: true, name: true, memberId: true, churchId: true, church: { select: { name: true } } },
+  });
+  if (!row || row.churchId !== session.churchId) redirect("/api/session-expired");
+  const user: SessionUser = {
+    ...session,
+    role: row.role as Role,
+    status: row.status as SessionUser["status"],
+    name: row.name,
+    memberId: row.memberId,
+    churchName: row.church.name,
+  };
   if (user.status !== "ACTIVE") redirect("/pending");
   return user;
 }

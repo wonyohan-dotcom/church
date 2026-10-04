@@ -1,5 +1,11 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { SESSION_COOKIE, verifySessionToken } from "@/lib/session";
+import {
+  SESSION_COOKIE,
+  SESSION_MAX_AGE,
+  SESSION_RENEW_AFTER,
+  readSessionToken,
+  signSessionToken,
+} from "@/lib/session";
 import { STAFF_ROLES, type Role } from "@/lib/constants";
 
 /** 로그인하지 않아도 볼 수 있는 화면 */
@@ -17,7 +23,23 @@ export async function proxy(req: NextRequest) {
   }
 
   const token = req.cookies.get(SESSION_COOKIE)?.value;
-  const user = token ? await verifySessionToken(token) : null;
+  const read = token ? await readSessionToken(token) : null;
+  const user = read?.user ?? null;
+
+  // 쓰고 있는 동안 로그인이 풀리지 않도록, 하루가 지난 로그인은 새로 연장한다.
+  const proceed = async () => {
+    const res = NextResponse.next();
+    if (user && read && Date.now() / 1000 - read.iat > SESSION_RENEW_AFTER) {
+      res.cookies.set(SESSION_COOKIE, await signSessionToken(user), {
+        httpOnly: true,
+        sameSite: "lax",
+        secure: process.env.NODE_ENV === "production",
+        path: "/",
+        maxAge: SESSION_MAX_AGE,
+      });
+    }
+    return res;
+  };
 
   if (!user) {
     const url = req.nextUrl.clone();
@@ -30,7 +52,7 @@ export async function proxy(req: NextRequest) {
 
   // 아직 승인되지 않은 계정은 대기 화면만 볼 수 있다.
   if (user.status !== "ACTIVE") {
-    if (pendingPage) return NextResponse.next();
+    if (pendingPage) return proceed();
     const url = req.nextUrl.clone();
     url.pathname = "/pending";
     url.search = "";
@@ -53,7 +75,7 @@ export async function proxy(req: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  return NextResponse.next();
+  return proceed();
 }
 
 export const config = {

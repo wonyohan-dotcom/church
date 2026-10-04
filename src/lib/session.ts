@@ -4,7 +4,10 @@ import { SignJWT, jwtVerify } from "jose";
 import type { Role, UserStatus } from "./constants";
 
 export const SESSION_COOKIE = "church_session";
-export const SESSION_MAX_AGE = 60 * 60 * 12; // 12시간
+/** 로그인 유지 기간. 쓰는 동안은 하루에 한 번씩 연장되어 사실상 풀리지 않는다. */
+export const SESSION_MAX_AGE = 60 * 60 * 24 * 90; // 90일
+/** 이 시간이 지난 로그인은 요청 때 새로 연장한다. */
+export const SESSION_RENEW_AFTER = 60 * 60 * 24; // 1일
 
 export type SessionUser = {
   id: string;
@@ -37,10 +40,15 @@ export async function signSessionToken(user: SessionUser): Promise<string> {
 }
 
 export async function verifySessionToken(token: string): Promise<SessionUser | null> {
+  return (await readSessionToken(token))?.user ?? null;
+}
+
+/** 로그인 정보와 발급 시각(초)을 함께 읽는다. */
+export async function readSessionToken(token: string): Promise<{ user: SessionUser; iat: number } | null> {
   try {
     const { payload } = await jwtVerify(token, secret());
     if (!payload.id || !payload.role || !payload.churchId) return null;
-    return {
+    return { iat: payload.iat ?? 0, user: {
       id: payload.id as string,
       loginId: payload.loginId as string,
       name: payload.name as string,
@@ -49,7 +57,7 @@ export async function verifySessionToken(token: string): Promise<SessionUser | n
       churchId: payload.churchId as string,
       churchName: (payload.churchName as string) ?? "",
       memberId: (payload.memberId as string | null) ?? null,
-    };
+    } };
   } catch {
     return null;
   }

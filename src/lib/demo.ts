@@ -64,6 +64,7 @@ export async function resetDemo(now = new Date()) {
         sealUrl: null,
         receiptAutoIssue: true,
         joinOpen: false,
+        showBalanceToMembers: true,
         // 알림함이 '휴대폰과 연결되지 않았습니다' 로 보이지 않게 연결된 상태로 둔다 (체험용 주소).
         bankToken: newBankToken(),
         bankAutoRecord: true,

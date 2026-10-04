@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth";
-import { getMemberYearOfferings } from "@/lib/finance";
+import { getCurrentBalance, getMemberYearOfferings } from "@/lib/finance";
+import { getChurch } from "@/lib/church";
 import { RECEIPT_STATUS, type ReceiptStatus } from "@/lib/constants";
 import { won, ymd } from "@/lib/format";
 import { Alert, Avatar, Badge, Card, CardTitle, PageHeader } from "@/components/ui";
@@ -31,6 +32,9 @@ export default async function MyPage({
 
   const thisYear = new Date().getFullYear();
   const lastYear = thisYear - 1;
+
+  const church = await getChurch(user.churchId);
+  const balance = church.showBalanceToMembers ? (await getCurrentBalance(user.churchId)).balance : null;
 
   const [member, thisYearData, lastYearData, receipts] = await Promise.all([
     prisma.member.findFirst({
@@ -73,20 +77,6 @@ export default async function MyPage({
         </div>
       )}
 
-      <Card className="mb-5">
-        <div className="flex items-center gap-4">
-          <Avatar src={member.photoUrl} name={member.name} size="md" />
-          <div className="min-w-0 flex-1">
-            <p className="font-bold text-ink">{member.name}</p>
-            <p className="tnum text-sm text-ink-3">
-              교적번호 {member.code}
-              {member.position && ` · ${member.position}`}
-              {member.district && ` · ${member.district.name}`}
-            </p>
-          </div>
-        </div>
-      </Card>
-
       {/* 올해 내가 드린 헌금 — 성도 화면에서 가장 크게 보여 준다 */}
       <section className="mb-5 overflow-hidden rounded-2xl bg-primary p-5 text-primary-ink shadow-[var(--shadow-sm)] sm:p-6">
         <p className="text-sm font-semibold opacity-80">{thisYear}년 내가 드린 헌금</p>
@@ -126,6 +116,27 @@ export default async function MyPage({
           내 헌금 전체 보기 →
         </Link>
       </section>
+
+      {balance !== null && (
+        <div className="mb-5 flex items-center justify-between rounded-2xl bg-surface-2 px-4 py-3">
+          <span className="text-sm text-ink-2">우리 교회 현재 잔액</span>
+          <span className="tnum text-[0.95rem] font-bold text-ink">{won(balance)}</span>
+        </div>
+      )}
+
+      <Card className="mb-5">
+        <div className="flex items-center gap-4">
+          <Avatar src={member.photoUrl} name={member.name} size="md" />
+          <div className="min-w-0 flex-1">
+            <p className="font-bold text-ink">{member.name}</p>
+            <p className="tnum text-sm text-ink-3">
+              교적번호 {member.code}
+              {member.position && ` · ${member.position}`}
+              {member.district && ` · ${member.district.name}`}
+            </p>
+          </div>
+        </div>
+      </Card>
 
       <Card className="mb-5">
         <CardTitle

@@ -62,6 +62,7 @@ export async function updateChurch(formData: FormData) {
       phone: str(formData.get("phone")),
       receiptAutoIssue: formData.get("receiptAutoIssue") === "1",
       joinOpen: formData.get("joinOpen") === "1",
+      showBalanceToMembers: formData.get("showBalanceToMembers") === "1",
       logoUrl,
       sealUrl,
     },
