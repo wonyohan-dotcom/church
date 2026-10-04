@@ -13,7 +13,9 @@ import {
   requireCommunityUser,
 } from "@/lib/community";
 import { parseDate, str } from "@/lib/format";
-import { deleteImage, saveImage } from "@/lib/upload";
+import { copyImage, deleteImage, saveImage } from "@/lib/upload";
+import { HISTORY_CATEGORIES, MAX_HISTORY_PHOTOS } from "@/lib/constants";
+import { logAudit } from "@/lib/church";
 import { parseSongLines, youtubePlaylistId } from "@/lib/youtube";
 
 /* ── 이용 약관 동의 ─────────────────────── */
@@ -243,4 +245,114 @@ export async function deleteBulletin(formData: FormData) {
   await prisma.setlist.deleteMany({ where: { id: String(formData.get("id")), churchId: user.churchId } });
   revalidatePath("/community/bulletin");
   redirect("/community/bulletin");
+}
+
+/* ── 연혁과 연동 (교역자·관리자가 고른다) ───────────────── */
+
+
+async function addCopiedPhotosToEvent(churchId: string, eventId: string, urls: string[]) {
+  const have = await prisma.historyPhoto.count({ where: { eventId } });
+  let order = have;
+  for (const url of urls.slice(0, Math.max(0, MAX_HISTORY_PHOTOS - have))) {
+    const copy = await copyImage(url, "history");
+    if (!copy) continue;
+    await prisma.historyPhoto.create({ data: { churchId, eventId, url: copy, sortOrder: order++ } });
+  }
+}
+
+function readCategory(v: FormDataEntryValue | null) {
+  return typeof v === "string" && v in HISTORY_CATEGORIES ? v : "GENERAL";
+}
+
+/** 교회 소통의 글(사진)을 연혁에 새로 올리거나, 이미 있는 연혁에 사진을 붙인다. */
+export async function postToHistory(formData: FormData) {
+  const user = await requireStaff();
+  await requireCommunityUser();
+  const postId = String(formData.get("postId") ?? "");
+  const post = await prisma.post.findFirst({
+    where: { id: postId, churchId: user.churchId },
+    include: { photos: { orderBy: { sortOrder: "asc" } } },
+  });
+  if (!post) redirect("/community");
+
+  const chosen = new Set(formData.getAll("photoId").map(String));
+  const urls = post.photos.filter((p) => chosen.has(p.id)).map((p) => p.url);
+  const back = `/community/post/${post.id}/history`;
+
+  let eventId: string;
+  if (formData.get("mode") === "existing") {
+    const existing = await prisma.historyEvent.findFirst({ where: { id: String(formData.get("eventId") ?? ""), churchId: user.churchId } });
+    if (!existing) redirect(`${back}?error=event`);
+    eventId = existing.id;
+  } else {
+    const title = (str(formData.get("title")) ?? "").slice(0, 100);
+    const date = parseDate(formData.get("date"));
+    if (!title || !date) redirect(`${back}?error=input`);
+    const event = await prisma.historyEvent.create({
+      data: {
+        churchId: user.churchId,
+        title,
+        date,
+        category: readCategory(formData.get("category")),
+        content: (str(formData.get("content")) ?? "").slice(0, 5000) || null,
+      },
+    });
+    eventId = event.id;
+    await logAudit({ churchId: user.churchId, action: "CREATE", entity: "HistoryEvent", entityId: event.id, summary: `연혁 등록(교회 소통에서): ${title}`, userId: user.id });
+  }
+  await addCopiedPhotosToEvent(user.churchId, eventId, urls);
+  revalidatePath("/history");
+  redirect(`/history/${eventId}`);
+}
+
+/** 주보를 연혁으로 기록한다. */
+export async function bulletinToHistory(formData: FormData) {
+  const user = await requireStaff();
+  await requireCommunityUser();
+  const id = String(formData.get("bulletinId") ?? "");
+  const exists = await prisma.setlist.findFirst({ where: { id, churchId: user.churchId }, select: { id: true } });
+  if (!exists) redirect("/community/bulletin");
+  const back = `/community/bulletin/${id}/history`;
+  const title = (str(formData.get("title")) ?? "").slice(0, 100);
+  const date = parseDate(formData.get("date"));
+  if (!title || !date) redirect(`${back}?error=input`);
+  const event = await prisma.historyEvent.create({
+    data: {
+      churchId: user.churchId,
+      title,
+      date,
+      category: readCategory(formData.get("category")),
+      content: (str(formData.get("content")) ?? "").slice(0, 5000) || null,
+    },
+  });
+  await logAudit({ churchId: user.churchId, action: "CREATE", entity: "HistoryEvent", entityId: event.id, summary: `연혁 등록(주보에서): ${title}`, userId: user.id });
+  revalidatePath("/history");
+  redirect(`/history/${event.id}`);
+}
+
+/** 연혁을 교회 소통(사진·소식)에 올린다. 사진은 복사해서 올린다. */
+export async function historyToPost(formData: FormData) {
+  const user = await requireStaff();
+  const communityUser = await requireCommunityUser();
+  const eventId = String(formData.get("eventId") ?? "");
+  const event = await prisma.historyEvent.findFirst({
+    where: { id: eventId, churchId: user.churchId },
+    include: { photos: { orderBy: { sortOrder: "asc" } } },
+  });
+  if (!event) redirect("/history");
+  const chosen = new Set(formData.getAll("photoId").map(String));
+  const urls = event.photos.filter((p) => chosen.has(p.id)).map((p) => p.url).slice(0, MAX_POST_PHOTOS);
+  const body = (str(formData.get("body")) ?? "").slice(0, MAX_POST_BODY);
+  if (!body && urls.length === 0) redirect(`/history/${eventId}/share?error=empty`);
+
+  const post = await prisma.post.create({
+    data: { churchId: user.churchId, authorId: communityUser.id, body, pinned: formData.get("pinned") === "1" },
+  });
+  let order = 0;
+  for (const url of urls) {
+    const copy = await copyImage(url, "community");
+    if (copy) await prisma.postPhoto.create({ data: { postId: post.id, url: copy, sortOrder: order++ } });
+  }
+  revalidatePath("/community");
+  redirect("/community");
 }

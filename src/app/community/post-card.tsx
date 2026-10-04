@@ -65,6 +65,7 @@ export function PostCard({
           canModerate={canModerate}
           deleteAction={deletePost}
           pin={canPin ? { pinned: post.pinned } : undefined}
+          historyHref={canPin ? `/community/post/${post.id}/history` : undefined}
         />
       </div>
 

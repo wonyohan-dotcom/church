@@ -1,4 +1,4 @@
-import { mkdir, unlink, writeFile } from "fs/promises";
+import { copyFile, mkdir, unlink, writeFile } from "fs/promises";
 import path from "path";
 import crypto from "crypto";
 import { STORAGE_BUCKET, supabase, supabaseConfigured } from "./storage";
@@ -116,5 +116,33 @@ export async function deleteImage(url: string | null | undefined) {
     await unlink(target);
   } catch {
     // 이미 지워졌거나 접근할 수 없는 경우는 무시
+  }
+}
+
+/**
+ * 이미 올라간 사진을 다른 곳(연혁 ↔ 교회 소통)에서도 쓰도록 새 파일로 복사한다.
+ * 같은 파일을 나눠 쓰면 한쪽을 지울 때 다른 쪽 사진이 깨지므로 항상 복사본을 만든다.
+ * 실패하면 null.
+ */
+export async function copyImage(url: string, folder: UploadFolder): Promise<string | null> {
+  const fromKey = uploadKeyFrom(url);
+  if (!fromKey) return null;
+  const ext = path.extname(fromKey) || ".jpg";
+  const name = `${Date.now()}-${crypto.randomBytes(6).toString("hex")}${ext}`;
+  const toKey = `${folder}/${name}`;
+  try {
+    if (supabaseConfigured()) {
+      const { error } = await supabase().storage.from(STORAGE_BUCKET).copy(fromKey, toKey);
+      if (error) return null;
+    } else {
+      const from = resolveUploadPath(url);
+      if (!from) return null;
+      const dir = path.join(/* turbopackIgnore: true */ UPLOAD_ROOT, folder);
+      await mkdir(dir, { recursive: true });
+      await copyFile(from, path.join(/* turbopackIgnore: true */ dir, name));
+    }
+    return `/uploads/${toKey}`;
+  } catch {
+    return null;
   }
 }

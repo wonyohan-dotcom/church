@@ -227,6 +227,9 @@ function Bulletin({ b, staff }: { b: Loaded; staff: boolean }) {
           <Link href={`/community/bulletin/new?from=${b.id}`} className="btn btn-ghost btn-sm">
             복사해서 새로 쓰기
           </Link>
+          <Link href={`/community/bulletin/${b.id}/history`} className="btn btn-ghost btn-sm">
+            연혁으로 기록
+          </Link>
           <Link href={`/community/bulletin/${b.id}/edit`} className="btn btn-ghost btn-sm">
             고치기
           </Link>

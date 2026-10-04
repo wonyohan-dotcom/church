@@ -73,6 +73,7 @@ export default async function CommunityPhotos({ searchParams }: { searchParams: 
                 canModerate={canModerate}
                 deleteAction={deletePost}
                 pin={staff ? { pinned: true } : undefined}
+                historyHref={staff ? `/community/post/${n.id}/history` : undefined}
               />
             </div>
           </div>

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { IconMore } from "@/components/icons";
 import { REPORT_REASONS } from "@/lib/community";
 import { blockUser, reportContent, togglePin } from "./actions";
@@ -14,6 +15,7 @@ export function ContentMenu({
   canModerate,
   deleteAction,
   pin,
+  historyHref,
 }: {
   kind: "POST" | "COMMENT";
   targetId: string;
@@ -23,6 +25,8 @@ export function ContentMenu({
   deleteAction: (formData: FormData) => Promise<void>;
   /** 교역자·관리자에게만 넘긴다: 공지 고정/해제 */
   pin?: { pinned: boolean };
+  /** 교역자·관리자에게만 넘긴다: 이 글을 연혁에 올리는 화면 */
+  historyHref?: string;
 }) {
   const mine = authorId === meId;
   return (
@@ -34,6 +38,11 @@ export function ContentMenu({
         <IconMore width={18} height={18} />
       </summary>
       <div className="absolute right-0 z-20 mt-1 w-52 rounded-2xl border border-line bg-surface p-2 text-sm shadow-[var(--shadow-sm)]">
+        {historyHref && (
+          <Link href={historyHref} className="block w-full rounded-lg px-3 py-2 text-left font-semibold text-ink hover:bg-surface-2">
+            연혁에 올리기
+          </Link>
+        )}
         {pin && (
           <form action={togglePin}>
             <input type="hidden" name="id" value={targetId} />

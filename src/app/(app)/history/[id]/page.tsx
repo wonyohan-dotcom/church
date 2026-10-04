@@ -8,6 +8,7 @@ import { Badge, Card, CardTitle, PageHeader } from "@/components/ui";
 import { ConfirmSubmitButton } from "@/components/form";
 import { deleteHistoryEvent, deleteHistoryPhoto } from "../actions";
 import { MAX_HISTORY_PHOTOS } from "@/lib/constants";
+import { communityEnabled } from "@/lib/native-app";
 import { HistoryPhotoUploader } from "./photo-uploader";
 import { GalleryOpen, GalleryRoot } from "@/components/photo-gallery";
 
@@ -36,6 +37,7 @@ export default async function HistoryDetailPage({
     },
   });
   if (!event || event.churchId !== staff.churchId) notFound();
+  const canShare = await communityEnabled(staff.churchId);
   const attendees = event.attendees.map((a) => a.member).sort((a, b) => a.name.localeCompare(b.name, "ko"));
   const guests = (event.guests ?? "")
     .split(/[\n,]/)
@@ -50,6 +52,11 @@ export default async function HistoryDetailPage({
         back={{ href: "/history", label: "교회 역사" }}
         actions={
           <>
+            {canShare && (
+              <Link href={`/history/${event.id}/share`} className="btn btn-ghost">
+                교회 소통에 공유
+              </Link>
+            )}
             <Link href={`/history/${event.id}/edit`} className="btn btn-ghost">
               수정
             </Link>
