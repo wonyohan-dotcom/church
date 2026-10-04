@@ -9,8 +9,8 @@ const TILES = [
 ];
 
 /** 홈 화면의 교회 소통 바로가기 (사진 · 채팅 · 콘티) */
-export async function CommunityShortcuts({ className = "mb-5" }: { className?: string }) {
-  if (!(await communityEnabled())) return null;
+export async function CommunityShortcuts({ churchId, className = "mb-5" }: { churchId: string; className?: string }) {
+  if (!(await communityEnabled(churchId))) return null;
   return (
     <section className={className}>
       <p className="eyebrow mb-2 px-1">교회 소통</p>

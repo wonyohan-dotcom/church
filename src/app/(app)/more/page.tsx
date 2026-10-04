@@ -13,7 +13,7 @@ export const metadata = { title: "전체 메뉴" };
 export default async function MorePage() {
   const user = await requireStaff();
   const church = await getChurch(user.churchId);
-  const sections = visibleSections(user.role, { community: await communityEnabled() });
+  const sections = visibleSections(user.role, { community: await communityEnabled(user.churchId) });
 
   return (
     <>

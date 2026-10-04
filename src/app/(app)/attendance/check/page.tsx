@@ -43,7 +43,7 @@ export default async function AttendanceCheckPage({
       <PageHeader
         eyebrow="출석"
         title="출석 체크"
-        description="예배에 나온 분을 눌러 표시하고 저장하세요. 교적에 없는 방문자는 숫자로만 적습니다."
+        description="나온 분은 이름을 눌러 표시하세요. 못 온 분은 ⋯ 를 눌러 사유(아파서 등)를 남기고, 처음 온 분은 이름을 적을 수 있습니다."
         back={{ href: "/attendance", label: "출석 현황" }}
       />
 
@@ -67,7 +67,9 @@ export default async function AttendanceCheckPage({
           districtOrder: m.district?.sortOrder ?? 9999,
         }))}
         initialChecked={record?.checks.map((c) => c.memberId) ?? []}
-        initialVisitors={record?.visitorCount ?? 0}
+        initialAbsences={record?.absences.map((a) => ({ memberId: a.memberId, reason: a.reason, note: a.note ?? "" })) ?? []}
+        initialVisitorList={record?.visitors.map((v) => ({ name: v.name, note: v.note ?? "" })) ?? []}
+        initialUnnamed={Math.max(0, (record?.visitorCount ?? 0) - (record?.visitors.length ?? 0))}
         initialNote={record?.note ?? ""}
         exists={!!record}
       />

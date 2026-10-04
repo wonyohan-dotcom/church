@@ -1,4 +1,6 @@
 import { headers } from "next/headers";
+import { prisma } from "./prisma";
+import { TRIAL } from "./demo";
 
 /**
  * App Store 앱(Capacitor 껍데기) 안에서 열린 화면인지.
@@ -16,11 +18,14 @@ export async function isNativeApp(): Promise<boolean> {
 
 /**
  * 교회 소통(사진·댓글·채팅)을 App Store 앱 안에서 보여 줄지.
- * 사용자가 올리는 글이 있는 기능은 애플이 따로 심사하므로(지침 1.2), 앱 심사가 끝난 뒤
- * 업데이트 심사에 함께 넣을 때까지 앱 안에서는 숨긴다. 웹 브라우저에서는 바로 쓸 수 있다.
+ * 사용자가 올리는 글이 있는 기능은 애플이 따로 심사하므로(지침 1.2), 앱 심사가 끝나기 전에는
+ * 심사원이 쓰는 체험·시험 교회에서만 숨기고, 실제 교회에서는 앱 안에서도 보인다.
+ * 웹 브라우저에서는 모든 교회가 바로 쓸 수 있다.
  */
-export const COMMUNITY_IN_NATIVE_APP = false;
+export const COMMUNITY_IN_REVIEW_CHURCHES = false;
 
-export async function communityEnabled(): Promise<boolean> {
-  return COMMUNITY_IN_NATIVE_APP || !(await isNativeApp());
+export async function communityEnabled(churchId: string): Promise<boolean> {
+  if (COMMUNITY_IN_REVIEW_CHURCHES || !(await isNativeApp())) return true;
+  const church = await prisma.church.findUnique({ where: { id: churchId }, select: { isDemo: true, name: true } });
+  return !!church && !church.isDemo && church.name !== TRIAL.churchName;
 }

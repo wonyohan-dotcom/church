@@ -216,6 +216,7 @@ model Member {
   receipts    DonationReceipt[]
   user        User?             @relation("MemberAccount")
   attendance  AttendanceCheck[]
+  absences    AttendanceAbsence[]
   visits      Visit[]
 
   createdAt DateTime @default(now())
@@ -461,7 +462,9 @@ model AttendanceRecord {
   churchId String
   church   Church @relation(fields: [churchId], references: [id], onDelete: Cascade)
 
-  checks AttendanceCheck[]
+  checks   AttendanceCheck[]
+  absences AttendanceAbsence[]
+  visitors AttendanceVisitor[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -717,4 +720,30 @@ model UserBlock {
   blocked   User   @relation("Blocked", fields: [blockedId], references: [id], onDelete: Cascade)
 
   @@unique([blockerId, blockedId])
+}
+
+// 사유가 있는 결석 (예: 아파서). 출석(AttendanceCheck)과는 따로 기록한다.
+model AttendanceAbsence {
+  id     String  @id @default(cuid())
+  reason String
+  note   String?
+
+  recordId String
+  record   AttendanceRecord @relation(fields: [recordId], references: [id], onDelete: Cascade)
+  memberId String
+  member   Member           @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@unique([recordId, memberId])
+}
+
+// 교적에 없는 방문자·새가족 (이름과 메모)
+model AttendanceVisitor {
+  id   String  @id @default(cuid())
+  name String
+  note String?
+
+  recordId String
+  record   AttendanceRecord @relation(fields: [recordId], references: [id], onDelete: Cascade)
+
+  @@index([recordId])
 }

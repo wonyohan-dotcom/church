@@ -21,7 +21,11 @@ export function dayRange(d: Date) {
 export function findRecord(churchId: string, date: Date, service: string) {
   return prisma.attendanceRecord.findFirst({
     where: { churchId, service, date: dayRange(date) },
-    include: { checks: { select: { memberId: true } } },
+    include: {
+      checks: { select: { memberId: true } },
+      absences: { select: { memberId: true, reason: true, note: true } },
+      visitors: { select: { name: true, note: true }, orderBy: { id: "asc" } },
+    },
   });
 }
 

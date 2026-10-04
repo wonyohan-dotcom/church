@@ -227,7 +227,7 @@ export default async function DashboardPage({
         )}
       </section>
 
-      <CommunityShortcuts className="mb-6" />
+      <CommunityShortcuts churchId={staff.churchId} className="mb-6" />
 
       <div className={`mb-5 grid gap-5 ${money ? "lg:grid-cols-[1.55fr_1fr]" : ""}`}>
         {money && (

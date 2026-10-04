@@ -107,6 +107,9 @@ export type Service = keyof typeof SERVICES;
 /** 몇 주 연속으로 주일예배에 빠지면 '돌아봐야 할 분'으로 보여줄지 */
 export const ABSENCE_ALERT_WEEKS = 3;
 
+/** 사유 있는 결석을 적을 때 고르는 말 */
+export const ABSENCE_REASONS = ["아파서", "여행·출장", "직장·학업", "가정 사정", "다른 교회 예배", "기타"] as const;
+
 /** 심방·상담 기록의 종류 */
 export const VISIT_KINDS = {
   VISIT: "심방",

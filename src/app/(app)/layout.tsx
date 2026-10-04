@@ -8,7 +8,7 @@ import { communityEnabled } from "@/lib/native-app";
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const user = await requireStaff();
   const church = await getChurch(user.churchId);
-  const community = await communityEnabled();
+  const community = await communityEnabled(user.churchId);
 
   // 메뉴 옆에 "처리할 일이 있다" 는 숫자를 붙인다.
   const finance = canManageFinance(user.role);

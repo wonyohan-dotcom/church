@@ -125,7 +125,7 @@ export default async function MyPage({
         </div>
       )}
 
-      <CommunityShortcuts />
+      <CommunityShortcuts churchId={user.churchId} />
 
       <Card className="mb-5">
         <div className="flex items-center gap-4">

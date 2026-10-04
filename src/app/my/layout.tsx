@@ -41,7 +41,7 @@ export default async function MyLayout({ children }: { children: React.ReactNode
           </div>
         </div>
         <div className="mx-auto max-w-3xl px-4">
-          <MyNav community={await communityEnabled()} />
+          <MyNav community={await communityEnabled(user.churchId)} />
         </div>
       </header>
 

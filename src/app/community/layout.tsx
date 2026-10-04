@@ -13,7 +13,7 @@ export const metadata = { title: "교회 소통" };
 
 export default async function CommunityLayout({ children }: { children: React.ReactNode }) {
   const user = await requireUser();
-  if (!(await communityEnabled())) redirect(isStaff(user.role) ? "/dashboard" : "/my");
+  if (!(await communityEnabled(user.churchId))) redirect(isStaff(user.role) ? "/dashboard" : "/my");
   const [church, me] = await Promise.all([
     getChurch(user.churchId),
     prisma.user.findUnique({ where: { id: user.id }, select: { communityAgreedAt: true } }),

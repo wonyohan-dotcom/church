@@ -13,7 +13,7 @@ export { REPORT_REASONS } from "./community-reasons";
 /** 소통 기능 이용 약관에 동의한 로그인 사용자. 동의 전이면 안내 화면으로 보낸다. */
 export async function requireCommunityUser(): Promise<SessionUser> {
   const user = await requireUser();
-  if (!(await communityEnabled())) redirect("/");
+  if (!(await communityEnabled(user.churchId))) redirect("/");
   const row = await prisma.user.findUnique({ where: { id: user.id }, select: { communityAgreedAt: true } });
   if (!row?.communityAgreedAt) redirect("/community");
   return user;
@@ -21,9 +21,9 @@ export async function requireCommunityUser(): Promise<SessionUser> {
 
 /** API 용: 로그인·승인·약관 동의가 모두 된 사용자만. 아니면 null. */
 export async function communityUserOrNull(): Promise<SessionUser | null> {
-  if (!(await communityEnabled())) return null;
   const session = await getSession();
   if (!session) return null;
+  if (!(await communityEnabled(session.churchId))) return null;
   const row = await prisma.user.findUnique({
     where: { id: session.id },
     select: { status: true, churchId: true, role: true, name: true, communityAgreedAt: true },
