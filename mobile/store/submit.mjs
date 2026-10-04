@@ -372,6 +372,13 @@ if (!SUBMIT) {
     if (open.data.some((s) => ["WAITING_FOR_REVIEW", "IN_REVIEW"].includes(s.attributes.state))) {
       say("이미 심사 대기 중입니다.");
     } else {
+      // 거절·정보 요청으로 멈춘 심사는 항목을 '해결됨' 으로 표시한 뒤 다시 제출한다.
+      if (sub?.attributes.state === "UNRESOLVED_ISSUES") {
+        const items = await get(`/v1/reviewSubmissions/${sub.id}/items`);
+        for (const it of items.data) {
+          await patch(`/v1/reviewSubmissionItems/${it.id}`, { data: { type: "reviewSubmissionItems", id: it.id, attributes: { resolved: true } } });
+        }
+      }
       if (!sub) {
         sub = (await post(`/v1/reviewSubmissions`, {
           data: { type: "reviewSubmissions", attributes: { platform: "IOS" }, relationships: { app: rel("apps", app.id) } },
