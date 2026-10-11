@@ -50,7 +50,7 @@ export default async function BankInboxPage({
   const sp = await searchParams;
   const tab = sp.tab === "done" ? "done" : "pending";
 
-  const [church, pendingCount, alerts, incomeAccounts, expenseAccounts] = await Promise.all([
+  const [church, pendingCount, alerts, incomeAccounts, expenseAccounts, unread] = await Promise.all([
     prisma.church.findUnique({
       where: { id: staff.churchId },
       select: { bankToken: true, bankAutoRecord: true },
@@ -78,6 +78,7 @@ export default async function BankInboxPage({
       orderBy: { sortOrder: "asc" },
       select: { id: true, name: true, category: true },
     }),
+    prisma.bankAlert.findMany({ where: { churchId: staff.churchId, status: "UNREAD" }, orderBy: { createdAt: "desc" }, take: 20 }),
   ]);
 
   // 대기 중인 알림마다 "이렇게 기록하면 될 것 같다" 는 추천을 붙인다.
@@ -157,6 +158,27 @@ export default async function BankInboxPage({
           처리 완료
         </Link>
       </div>
+
+      {tab === "pending" && unread.length > 0 && (
+        <Card className="mb-4 border border-warn">
+          <CardTitle>읽지 못한 문자 {unread.length}건</CardTitle>
+          <p className="mb-3 text-sm text-ink-2">
+            문자는 도착했지만 금액을 자동으로 읽지 못했습니다. 내용을 보고 직접 기록한 뒤 지워 주세요.
+          </p>
+          <ul className="space-y-3">
+            {unread.map((u) => (
+              <li key={u.id} className="rounded-xl bg-surface-2 p-3">
+                <p className="whitespace-pre-wrap break-words text-sm text-ink">{u.rawText}</p>
+                <form action={deleteBankAlert.bind(null, u.id)} className="mt-2 text-right">
+                  <button type="submit" className="btn btn-ghost btn-sm">
+                    확인했어요(지우기)
+                  </button>
+                </form>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
 
       {alerts.length === 0 ? (
         <Card>

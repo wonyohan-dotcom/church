@@ -13,7 +13,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   // 메뉴 옆에 "처리할 일이 있다" 는 숫자를 붙인다.
   const finance = canManageFinance(user.role);
   const [bank, receipts, signups] = await Promise.all([
-    finance ? prisma.bankAlert.count({ where: { churchId: user.churchId, status: "PENDING" } }) : 0,
+    finance ? prisma.bankAlert.count({ where: { churchId: user.churchId, status: { in: ["PENDING", "UNREAD"] } } }) : 0,
     finance
       ? prisma.donationReceipt.count({ where: { churchId: user.churchId, status: "REQUESTED" } })
       : 0,

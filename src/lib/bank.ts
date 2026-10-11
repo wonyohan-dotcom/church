@@ -50,6 +50,8 @@ type IngestResult = {
   saved: BankAlertModel[];
   duplicates: number;
   unreadable: number;
+  /** 읽지 못했지만 은행 문자처럼 보여 알림함에 보관한 수 */
+  unreadKept?: number;
   /** 잔액이 맞지 않아 새로 만든 '문자 없이 오간 돈' 알림 */
   gaps: BankAlertModel[];
 };
@@ -71,6 +73,11 @@ function dayOf(d: Date) {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate());
 }
 
+/** 입금·출금·잔액과 금액이 함께 있으면 은행 문자로 본다. */
+export function looksLikeBankText(text: string) {
+  return /(입금|출금|잔액)/.test(text) && /\d[\d,]*\s*원/.test(text);
+}
+
 export async function ingestBankText(
   churchId: string,
   text: string,
@@ -81,10 +88,24 @@ export async function ingestBankText(
   const result: IngestResult = { saved: [], duplicates: 0, unreadable: 0, gaps: [] };
 
   const rows: Prisma.BankAlertCreateManyInput[] = [];
+  const unreadRows: Prisma.BankAlertCreateManyInput[] = [];
   for (const message of messages) {
     const parsed = parseBankMessage(message);
     if (!parsed) {
       result.unreadable++;
+      // 은행 문자처럼 보이는데 읽지 못한 것은 버리지 않고 따로 보관해 사람이 보게 한다.
+      if (looksLikeBankText(message)) {
+        unreadRows.push({
+          churchId,
+          direction: "IN",
+          amount: 0,
+          occurredAt: new Date(),
+          rawText: message.slice(0, 2000),
+          source,
+          status: "UNREAD",
+          dedupKey: dedupKey(message),
+        });
+      }
       continue;
     }
     rows.push({
@@ -113,6 +134,19 @@ export async function ingestBankText(
       },
       { timeout: 20_000, maxWait: 20_000 },
     );
+  }
+
+  if (unreadRows.length > 0) {
+    const kept = await prisma.bankAlert.createManyAndReturn({ data: unreadRows, skipDuplicates: true });
+    result.unreadKept = kept.length;
+    if (kept.length > 0) {
+      await notifyRoles(churchId, ["ADMIN", "FINANCE"], {
+        title: "읽지 못한 입출금 문자가 있습니다",
+        body: "문자는 도착했지만 금액을 읽지 못했습니다. 입출금 알림함에서 확인해 주세요.",
+        url: "/finance/bank",
+        tag: `bank-unread-${kept[0].id}`,
+      }).catch(() => {});
+    }
   }
 
   const church = await prisma.church.findUnique({

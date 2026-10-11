@@ -189,3 +189,9 @@ test("입금취소는 나간 돈", () => {
   assert.equal(r.amount, 30_000);
   assert.equal(r.correction, true);
 });
+
+import { looksLikeBankText } from "./bank";
+test("읽지 못해도 은행 문자처럼 보이면 보관 대상", () => {
+  assert.equal(looksLikeBankText("[Web발신] 입금 50,000원 잔액 1,000원 홍길동"), true);
+  assert.equal(looksLikeBankText("인증번호 123456"), false);
+});

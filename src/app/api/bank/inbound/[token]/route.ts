@@ -63,7 +63,9 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ token: str
       ? "알림함에 넣었습니다."
       : result.duplicates > 0
         ? "이미 받은 문자입니다."
-        : "입출금 문자가 아니라서 넘어갔습니다.";
+        : (result.unreadKept ?? 0) > 0
+          ? "금액을 읽지 못해 알림함에 따로 보관했습니다."
+          : "입출금 문자가 아니라서 넘어갔습니다.";
 
   return NextResponse.json({ ok: true, 결과 });
 }
